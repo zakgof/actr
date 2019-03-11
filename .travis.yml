@@ -1,0 +1,8 @@
+language: java
+jdk:
+  - oraclejdk8
+branches:
+  only:
+   - release
+script:
+  - ./gradlew bintrayUpload -PbintrayKey=${BINTRAY_KEY}
