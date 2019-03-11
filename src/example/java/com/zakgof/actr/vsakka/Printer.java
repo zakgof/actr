@@ -1,4 +1,4 @@
-package com.zakgof.actr.example;
+package com.zakgof.actr.vsakka;
 
 public class Printer {
 
