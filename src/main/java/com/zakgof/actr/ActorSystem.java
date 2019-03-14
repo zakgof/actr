@@ -7,6 +7,8 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class ActorSystem {
+	
+	private final ActorScheduler scheduler = new ForkJoinPoolScheduler();
 
 	private static final ActorSystem DEFAULT = new ActorSystem("default");
 	private String name;
@@ -75,6 +77,7 @@ public class ActorSystem {
 
 		public ActorBuilder(ActorSystem actorSystem) {
 			this.actorSystem = actorSystem;
+			this.scheduler = actorSystem.scheduler;
 		}
 		
 		public ActorBuilder<T> object(T object) {

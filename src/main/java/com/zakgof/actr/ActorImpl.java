@@ -6,29 +6,25 @@ import java.util.function.Supplier;
 
 public class ActorImpl<T> implements ActorRef<T> {
 	
-	private T object;
+	private volatile T object;
 	private final ActorSystem actorSystem;
 	private final ActorScheduler scheduler;
-	private String name;
+	private final String name;
 	
 	
 	
 	ActorImpl(T object, Supplier<T> constructor, Consumer<T> destructor, ActorScheduler scheduler, ActorSystem actorSystem, String name) {
 		this.actorSystem = actorSystem;
 		this.name = name;
+		// System.err.println("    create actor " + name);
 		if (object != null) {
 			this.object = object;
-			actorSystem.add(this);
+		}
+		if (constructor != null) {
+			this.object = constructor.get();
 		}
 		this.scheduler = scheduler == null ? new DedicatedThreadScheduler() : scheduler;
-		if (constructor != null) {
-			this.scheduler.schedule(() -> {
-				actorSystem.setCurrentActor(this);
-				this.object = constructor.get();
-				actorSystem.add(this);
-			}, this);
-		}
-		
+		actorSystem.add(this);
 	}
 
 	@Override
@@ -58,7 +54,7 @@ public class ActorImpl<T> implements ActorRef<T> {
 	
 	@Override
 	public String toString() {
-		return "[Actor: " + object.getClass().getSimpleName() + "/" + name + "]";
+		return "[Actor: " + name + "]";
 	}
 
 	@Override

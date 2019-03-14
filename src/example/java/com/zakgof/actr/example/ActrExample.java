@@ -10,10 +10,10 @@ public class ActrExample {
 	
 	
 	public static void main(String[] args) throws InterruptedException {
-		
-		final ActorRef<Printer> printerActor = ActorRef.from(Printer::new);
-		final ActorRef<Randomizer> randomizerActor = ActorRef.from(Randomizer::new);
-		final ActorRef<Looper> looperActor = ActorRef.from(() -> new Looper(printerActor, randomizerActor));
+		ActorSystem system = ActorSystem.dflt();
+		final ActorRef<Printer> printerActor = system.actorOf(Printer::new);
+		final ActorRef<Randomizer> randomizerActor = system.actorOf(Randomizer::new);
+		final ActorRef<Looper> looperActor = system.actorOf(() -> new Looper(printerActor, randomizerActor));
 		
 		looperActor.tell(Looper::run);
 		
@@ -55,7 +55,7 @@ public class ActrExample {
 		private void run() {
 			printerActor.tell(printer -> printer.print("Looper: >>>"));
 			randomizerActor.ask(Randomizer::random, this::showRandom);
-			ActorSystem.dflt().callerActor(this).later(Looper::run, 1000);
+	//		ActorSystem.dflt().callerActor(this).later(Looper::run, 1000);
 			printerActor.tell(printer -> printer.print("Looper: <<<"));
 		}
 		
