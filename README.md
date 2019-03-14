@@ -15,6 +15,7 @@ Akka will require more boilerplate code. Code with Actr will be more concise.
 
 |  | Akka | Actr |
 | ------------- | ------------- | ------------- |
+| Type safety  | No. Sending any message to any actor won't reveal any problems at compile time|  Type safe |
 | Actor implementation class  | Must extend AbstractActor |  No constraints |
 | Message | Must create a class for every message type | Message type is represented by a method |
 | Message type dispatching | Must implement dispatching| Message type = method, no need for implementing dispatching |
