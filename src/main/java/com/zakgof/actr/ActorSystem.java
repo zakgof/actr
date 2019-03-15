@@ -2,6 +2,7 @@ package com.zakgof.actr;
 
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -16,6 +17,7 @@ public class ActorSystem {
 	private static final ActorSystem DEFAULT = new ActorSystem("default");
 	private String name;
 	private Map<Object, ActorImpl<?>> actors = new ConcurrentHashMap<>();
+	private CompletableFuture<String> terminator = new CompletableFuture<String>();
 	private ScheduledExecutorService timer = Executors.newSingleThreadScheduledExecutor(runnable -> {
 		Thread thread = new Thread(runnable, "actr:" + name + ":timer");
 		thread.setPriority(8);
@@ -33,12 +35,6 @@ public class ActorSystem {
 
 	public static ActorSystem create(String name) {
 		return new ActorSystem(name);
-	}
-
-	public void shutdown() { // TODO : thread safety !!!
-		for (ActorImpl<?> actorRef : actors.values()) {
-			actorRef.destroy();
-		}
 	}
 
 	void add(ActorImpl<?> actorRef) {
@@ -112,5 +108,20 @@ public class ActorSystem {
 		timer.schedule(runnable, ms, TimeUnit.MILLISECONDS);
 	}
 
+	public CompletableFuture<String> shutdownCompletable() {
+		return terminator;
+	}
+	
+	public void shutdown() { // TODO
+		timer.shutdownNow();
+		scheduler.destroy();
+		actors.clear();
+		terminator.complete("shutdown");
+		
+	}
+
+	void remove(ActorImpl<?> actorImpl) {
+		actors.remove(actorImpl.object());
+	}
 
 }
