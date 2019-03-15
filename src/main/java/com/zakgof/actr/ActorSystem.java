@@ -8,12 +8,12 @@ import java.util.function.Supplier;
 
 public class ActorSystem {
 	
-	private final ActorScheduler scheduler = new ForkJoinPoolScheduler();
+	private final IActorScheduler scheduler = new ForkJoinPoolScheduler();
 
 	private static final ActorSystem DEFAULT = new ActorSystem("default");
 	private String name;
 	private Map<Object, ActorImpl<?>> actors = new ConcurrentHashMap<>();
-	private static ThreadLocal<ActorImpl<?>> currentActor = new ThreadLocal<>();
+	
 
 	public ActorSystem(String name) {
 		this.name = name;
@@ -37,23 +37,6 @@ public class ActorSystem {
 		actors.put(actorRef.object(), actorRef);
 	}
 
-//	@SuppressWarnings("unchecked")
-//	public <T> ActorRef<T> actorOf(T object) {
-//		return (ActorRef<T>) actors.get(object);
-//	}
-
-	public static <T> ActorRef<T> callerActor(T object) {
-		return (ActorRef<T>) currentActor.get();
-	}
-	
-	ActorRef<?> callerActor() {
-		return currentActor.get();
-	}
-
-	void setCurrentActor(ActorImpl<?> actorRef) {
-		currentActor.set(actorRef);
-	}
-
 	public <T> ActorBuilder<T> actorBuilder() {
 		return new ActorBuilder<T>(this);
 	}	
@@ -72,7 +55,7 @@ public class ActorSystem {
 		private T object;
 		private Supplier<T> constructor;
 		private Consumer<T> destructor;
-		private ActorScheduler scheduler;
+		private IActorScheduler scheduler;
 		private String name;
 
 		public ActorBuilder(ActorSystem actorSystem) {
@@ -100,7 +83,7 @@ public class ActorSystem {
 			return this;
 		}
 		
-		public ActorBuilder<T> scheduler(ActorScheduler scheduler) {
+		public ActorBuilder<T> scheduler(IActorScheduler scheduler) {
 			this.scheduler = scheduler;
 			return this;
 		}

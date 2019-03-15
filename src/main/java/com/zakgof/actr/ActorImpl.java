@@ -8,12 +8,12 @@ public class ActorImpl<T> implements ActorRef<T> {
 	
 	private volatile T object;
 	private final ActorSystem actorSystem;
-	private final ActorScheduler scheduler;
+	private final IActorScheduler scheduler;
 	private final String name;
 	
 	
 	
-	ActorImpl(T object, Supplier<T> constructor, Consumer<T> destructor, ActorScheduler scheduler, ActorSystem actorSystem, String name) {
+	ActorImpl(T object, Supplier<T> constructor, Consumer<T> destructor, IActorScheduler scheduler, ActorSystem actorSystem, String name) {
 		this.actorSystem = actorSystem;
 		this.name = name;
 		// System.err.println("    create actor " + name);
@@ -29,23 +29,23 @@ public class ActorImpl<T> implements ActorRef<T> {
 
 	@Override
 	public void tell(Consumer<T> action) {
+		ActorRef<?> caller = Actr.current();
 		scheduler.schedule(() -> {
-			actorSystem.setCurrentActor(this);
+			Actr.setCurrent(this);
+			Actr.setCaller(caller);
 			action.accept(object);
-			actorSystem.setCurrentActor(null);
+			Actr.setCurrent(null);
+			Actr.setCaller(null);
 		}, this);
 	}
 	
 	
 	@Override
 	public <R> void ask(Function<T, R> call, Consumer<R> consumer) {
-		ActorRef<?> caller = actorSystem.callerActor();
-		scheduler.schedule(() -> {
-			actorSystem.setCurrentActor(this);
+		tell(target -> {
 			R result = call.apply(object);
-				caller.tell(c -> consumer.accept(result));
-			actorSystem.setCurrentActor(null);
-		}, this);
+			Actr.caller().tell(c -> consumer.accept(result));
+		});
 	}
 
 	T object() {
@@ -65,6 +65,11 @@ public class ActorImpl<T> implements ActorRef<T> {
 	public void destroy() {
 		// TODO Auto-generated method stub
 		
+	}
+
+	@Override
+	public <C> ActorRef<C> actorOf(Supplier<C> constructor, String name) {
+		return system().actorOf(constructor, this.name + "/" + name);
 	}
 
 }

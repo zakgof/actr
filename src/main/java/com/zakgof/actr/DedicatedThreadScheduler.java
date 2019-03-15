@@ -4,7 +4,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-public class DedicatedThreadScheduler implements ActorScheduler {
+public class DedicatedThreadScheduler implements IActorScheduler {
 
 	private ExecutorService es;
 	

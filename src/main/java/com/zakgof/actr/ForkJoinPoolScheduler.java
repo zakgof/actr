@@ -5,7 +5,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ForkJoinPool;
 
-public class ForkJoinPoolScheduler implements ActorScheduler {
+public class ForkJoinPoolScheduler implements IActorScheduler {
 	
 	
 	private ForkJoinPool pool;

@@ -2,6 +2,7 @@ package com.zakgof.actr;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public interface ActorRef<T> {
 
@@ -10,6 +11,8 @@ public interface ActorRef<T> {
 	<R> void ask(Function<T, R> call, Consumer<R> consumer);
 
 	void tell(Consumer<T> action);
+
+	public <C> ActorRef<C> actorOf(Supplier<C> constructor, String name);
 	
 	
 	

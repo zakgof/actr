@@ -1,6 +1,6 @@
 package com.zakgof.actr;
 
-public interface ActorScheduler {
+public interface IActorScheduler {
 	
 	void schedule(Runnable task, Object actorId);
 	
