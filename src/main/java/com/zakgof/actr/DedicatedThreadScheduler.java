@@ -12,6 +12,10 @@ public class DedicatedThreadScheduler implements IActorScheduler {
 		this.es = Executors.newSingleThreadExecutor();
 	}
 
+	public DedicatedThreadScheduler(String name) {
+		this.es = Executors.newSingleThreadExecutor(runnable -> new Thread(runnable, "actr:" + name));
+	}
+
 	@Override
 	public void schedule(Runnable task, Object actorId) {
 		if (!es.isShutdown()) {
