@@ -3,6 +3,9 @@ package com.zakgof.actr;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -13,6 +16,11 @@ public class ActorSystem {
 	private static final ActorSystem DEFAULT = new ActorSystem("default");
 	private String name;
 	private Map<Object, ActorImpl<?>> actors = new ConcurrentHashMap<>();
+	private ScheduledExecutorService timer = Executors.newSingleThreadScheduledExecutor(runnable -> {
+		Thread thread = new Thread(runnable, "actr:" + name + ":timer");
+		thread.setPriority(8);
+		return thread;
+	});
 	
 
 	public ActorSystem(String name) {
@@ -98,6 +106,10 @@ public class ActorSystem {
 			return actorRef;
 		}
 
+	}
+
+	void later(Runnable runnable, long ms) {
+		timer.schedule(runnable, ms, TimeUnit.MILLISECONDS);
 	}
 
 

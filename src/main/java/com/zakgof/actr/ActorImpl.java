@@ -20,10 +20,13 @@ public class ActorImpl<T> implements ActorRef<T> {
 		if (object != null) {
 			this.object = object;
 		}
-		if (constructor != null) {
-			this.object = constructor.get();
-		}
 		this.scheduler = scheduler == null ? new DedicatedThreadScheduler() : scheduler;
+		if (constructor != null) {
+			Actr.setCurrent(this);
+			this.object = constructor.get();
+			Actr.setCurrent(null);
+		}
+		
 		actorSystem.add(this);
 	}
 
@@ -37,6 +40,20 @@ public class ActorImpl<T> implements ActorRef<T> {
 			Actr.setCurrent(null);
 			Actr.setCaller(null);
 		}, this);
+	}
+
+	@Override
+	public void later(Consumer<T> action, long ms) {
+		ActorRef<?> caller = Actr.current();
+		actorSystem.later(() -> 
+			scheduler.schedule(() -> {
+				Actr.setCurrent(this);
+				Actr.setCaller(caller);
+				action.accept(object);
+				Actr.setCurrent(null);
+				Actr.setCaller(null);
+			}, this), ms
+		);
 	}
 	
 	

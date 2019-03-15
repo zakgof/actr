@@ -4,5 +4,7 @@ public interface IActorScheduler {
 	
 	void schedule(Runnable task, Object actorId);
 	
-	void destroy(); // TODO: await ? terminate ?
+	default void destroy() {
+		 // TODO: await ? terminate ?
+	};
 }
