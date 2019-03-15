@@ -10,7 +10,7 @@ public class ActorImpl<T> implements ActorRef<T> {
 	private final ActorSystem actorSystem;
 	private final IActorScheduler scheduler;
 	private final String name;
-	
+	private boolean removed;
 	
 	
 	ActorImpl(T object, Supplier<T> constructor, Consumer<T> destructor, IActorScheduler scheduler, ActorSystem actorSystem, String name) {
@@ -80,8 +80,8 @@ public class ActorImpl<T> implements ActorRef<T> {
 	}
 
 	public void destroy() {
-		// TODO Auto-generated method stub
-		
+		this.removed = true;
+		actorSystem.remove(this);
 	}
 
 	@Override
