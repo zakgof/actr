@@ -1,4 +1,7 @@
 ## actr
+![Travis CI](https://travis-ci.org/zakgof/actr.svg?branch=release)
+![https://bintray.com/zakgof/maven/actr](https://api.bintray.com/packages/zakgof/maven/actr/images/download.svg)
+
 Simple actor model implementation for Java
 
 - Simple API
@@ -28,7 +31,7 @@ Compare the same example implemented with
 
 #### Gradle
 ````groovy
-compile 'com.github.zakgof:actr:0.0.1'
+compile 'com.github.zakgof:actr:0.0.3'
 ````
 
 #### Maven
@@ -36,7 +39,7 @@ compile 'com.github.zakgof:actr:0.0.1'
 <dependency>
   <groupId>com.github.zakgof</groupId>
   <artifactId>actr</artifactId>
-  <version>0.0.1</version>
+  <version>0.0.3</version>
 </dependency>
 ````
 
@@ -60,7 +63,7 @@ private static class Printer {
 Create an actor
 
 ````java
-final ActorRef<Printer> printerActor = ActorRef.from(Printer::new);
+final ActorRef<Printer> printerActor = ActorSystem.dflt().actorOf(Printer::new);
 ````
 
 Call Printer from another actor
@@ -85,4 +88,8 @@ Call Printer from another actor
 
 ### A Bigger example
 https://github.com/zakgof/actr/blob/master/src/example/java/com/zakgof/actr/example/ActrExample.java
+
+### Benchmark actr vs akka
+https://github.com/zakgof/akka-actr-benchmark
+
 

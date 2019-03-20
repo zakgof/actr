@@ -23,7 +23,6 @@ public class ActorSystem {
 		thread.setPriority(8);
 		return thread;
 	});
-	
 
 	public ActorSystem(String name) {
 		this.name = name;
@@ -35,6 +34,18 @@ public class ActorSystem {
 
 	public static ActorSystem create(String name) {
 		return new ActorSystem(name);
+	}
+
+	public void shutdown() { // TODO : thread safety !!!
+		for (ActorImpl<?> actorRef : actors.values()) {
+			actorRef.destroy();
+		}
+		scheduler.destroy();
+		terminator.complete("shutdown");
+	}
+	
+	public CompletableFuture<String> shutdownCompletable() {
+		return terminator;
 	}
 
 	void add(ActorImpl<?> actorRef) {
@@ -106,18 +117,6 @@ public class ActorSystem {
 
 	void later(Runnable runnable, long ms) {
 		timer.schedule(runnable, ms, TimeUnit.MILLISECONDS);
-	}
-
-	public CompletableFuture<String> shutdownCompletable() {
-		return terminator;
-	}
-	
-	public void shutdown() { // TODO
-		timer.shutdownNow();
-		scheduler.destroy();
-		actors.clear();
-		terminator.complete("shutdown");
-		
 	}
 
 	void remove(ActorImpl<?> actorImpl) {
