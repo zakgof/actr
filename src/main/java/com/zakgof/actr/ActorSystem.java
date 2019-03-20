@@ -2,6 +2,7 @@ package com.zakgof.actr;
 
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -21,6 +22,8 @@ public class ActorSystem {
 		thread.setPriority(8);
 		return thread;
 	});
+
+	private CompletableFuture<String> terminator = new CompletableFuture<>();
 	
 
 	public ActorSystem(String name) {
@@ -39,6 +42,11 @@ public class ActorSystem {
 		for (ActorImpl<?> actorRef : actors.values()) {
 			actorRef.destroy();
 		}
+		terminator.complete("shutdown");
+	}
+	
+	public CompletableFuture<String> shutdownCompletable() {
+		return terminator;
 	}
 
 	void add(ActorImpl<?> actorRef) {

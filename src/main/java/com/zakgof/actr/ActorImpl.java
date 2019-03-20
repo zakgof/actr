@@ -22,9 +22,12 @@ public class ActorImpl<T> implements ActorRef<T> {
 		}
 		this.scheduler = scheduler == null ? new DedicatedThreadScheduler() : scheduler;
 		if (constructor != null) {
-			Actr.setCurrent(this);
-			this.object = constructor.get();
-			Actr.setCurrent(null);
+			synchronized (this) {
+				ActorRef<?> current = Actr.current();
+				Actr.setCurrent(this);
+				this.object = constructor.get();
+				Actr.setCurrent(current);
+			}
 		}
 		
 		actorSystem.add(this);
@@ -34,11 +37,13 @@ public class ActorImpl<T> implements ActorRef<T> {
 	public void tell(Consumer<T> action) {
 		ActorRef<?> caller = Actr.current();
 		scheduler.schedule(() -> {
-			Actr.setCurrent(this);
-			Actr.setCaller(caller);
-			action.accept(object);
-			Actr.setCurrent(null);
-			Actr.setCaller(null);
+			synchronized (this) {
+				Actr.setCurrent(this);
+				Actr.setCaller(caller);
+				action.accept(object);
+				Actr.setCurrent(null);
+				Actr.setCaller(null);
+			}
 		}, this);
 	}
 
@@ -47,11 +52,13 @@ public class ActorImpl<T> implements ActorRef<T> {
 		ActorRef<?> caller = Actr.current();
 		actorSystem.later(() -> 
 			scheduler.schedule(() -> {
-				Actr.setCurrent(this);
-				Actr.setCaller(caller);
-				action.accept(object);
-				Actr.setCurrent(null);
-				Actr.setCaller(null);
+				synchronized (this) {
+					Actr.setCurrent(this);
+					Actr.setCaller(caller);
+					action.accept(object);
+					Actr.setCurrent(null);
+					Actr.setCaller(null);
+				}
 			}, this), ms
 		);
 	}
