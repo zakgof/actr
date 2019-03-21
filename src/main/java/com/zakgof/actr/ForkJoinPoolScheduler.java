@@ -1,42 +1,49 @@
 package com.zakgof.actr;
 
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ForkJoinPoolScheduler implements IActorScheduler {
 	
 	
 	private ForkJoinPool pool;
-	private Map<Object, ConcurrentLinkedQueue<Runnable>> delayed = new ConcurrentHashMap<>();
+	private Map<Object, Mailbox> delayed = new ConcurrentHashMap<>();
 
 	public ForkJoinPoolScheduler() {
 		pool = ForkJoinPool.commonPool();
+	}
+	
+	private static class Mailbox {
+		private final Queue<Runnable> queue = new ConcurrentLinkedQueue<>();
+		private final AtomicBoolean locked = new AtomicBoolean();
 	}
 
 	@Override
 	public void schedule(Runnable raw, Object actorId) {
 		
 		Runnable task = () -> {
-			// System.err.println(">>>> runnin " + actorId + " in " + Thread.currentThread().getName() + " " + raw);
-			ConcurrentLinkedQueue<Runnable> queue = delayed.compute(actorId, (a, l) -> {if (l == null) return new ConcurrentLinkedQueue<>(); else return l;});
-			queue.add(raw);
-			if (queue.peek() != raw) {
-				// System.err.println("    delayed " + raw + "  :  " + queue);
+			Mailbox mailbox = delayed.compute(actorId, (a, l) -> {if (l == null) return new Mailbox(); else return l;});
+			// System.err.println("Enqueue " + raw + "  queue" + queue.size() + " " + Thread.currentThread().getName());
+			mailbox.queue.add(raw);
+			if (!mailbox.locked.compareAndSet(false, true)) {
+				// System.err.println( "leave it " + Thread.currentThread().getName());
 				return;
 			}
 			for(;;) {
-				Runnable runnable = queue.peek();
+				Runnable runnable = mailbox.queue.peek();
 				if (runnable != null) {
-					// System.err.println("    run " + runnable);
+					// System.err.println("         run " + runnable + "  queue" + queue.size() + " " + Thread.currentThread().getName());
 					runnable.run();
-					queue.poll();
+					mailbox.queue.remove();
 				} else
 					break;
 			}
-			
-			// System.err.println("<<<< runnin " + actorId + " in " + Thread.currentThread().getName());
+			mailbox.locked.set(false);
+			// System.err.println( "finish " + Thread.currentThread().getName());
 		};
 		pool.execute(task);
 	}
@@ -46,5 +53,6 @@ public class ForkJoinPoolScheduler implements IActorScheduler {
 		// TODO Auto-generated method stub
 		
 	}
+
 
 }

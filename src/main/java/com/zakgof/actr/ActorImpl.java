@@ -1,10 +1,11 @@
 package com.zakgof.actr;
 
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class ActorImpl<T> implements ActorRef<T> {
+class ActorImpl<T> implements ActorRef<T> {
 	
 	private volatile T object;
 	private final ActorSystem actorSystem;
@@ -22,12 +23,10 @@ public class ActorImpl<T> implements ActorRef<T> {
 		}
 		this.scheduler = scheduler == null ? new DedicatedThreadScheduler() : scheduler;
 		if (constructor != null) {
-			synchronized (this) {
-				ActorRef<?> current = Actr.current();
-				Actr.setCurrent(this);
-				this.object = constructor.get();
-				Actr.setCurrent(current);
-			}
+			ActorRef<?> current = Actr.current();
+			Actr.setCurrent(this);
+			this.object = constructor.get();
+			Actr.setCurrent(current);
 		}
 		
 		actorSystem.add(this);
@@ -37,13 +36,11 @@ public class ActorImpl<T> implements ActorRef<T> {
 	public void tell(Consumer<T> action) {
 		ActorRef<?> caller = Actr.current();
 		scheduler.schedule(() -> {
-			synchronized (this) {
-				Actr.setCurrent(this);
-				Actr.setCaller(caller);
-				action.accept(object);
-				Actr.setCurrent(null);
-				Actr.setCaller(null);
-			}
+			Actr.setCurrent(this);
+			Actr.setCaller(caller);
+			action.accept(object);
+			Actr.setCurrent(null);
+			Actr.setCaller(null);
 		}, this);
 	}
 
@@ -52,24 +49,23 @@ public class ActorImpl<T> implements ActorRef<T> {
 		ActorRef<?> caller = Actr.current();
 		actorSystem.later(() -> 
 			scheduler.schedule(() -> {
-				synchronized (this) {
-					Actr.setCurrent(this);
-					Actr.setCaller(caller);
-					action.accept(object);
-					Actr.setCurrent(null);
-					Actr.setCaller(null);
-				}
+				Actr.setCurrent(this);
+				Actr.setCaller(caller);
+				action.accept(object);
+				Actr.setCurrent(null);
+				Actr.setCaller(null);
 			}, this), ms
 		);
 	}
 	
+	@Override
+	public <R> void ask(BiConsumer<T, Consumer<R>> action, Consumer<R> consumer) {
+		tell(target -> action.accept(target, result -> Actr.caller().tell(c -> consumer.accept(result))));		
+	}
 	
 	@Override
 	public <R> void ask(Function<T, R> call, Consumer<R> consumer) {
-		tell(target -> {
-			R result = call.apply(object);
-			Actr.caller().tell(c -> consumer.accept(result));
-		});
+		ask((target, callback) -> callback.accept(call.apply(target)), consumer);
 	}
 
 	T object() {

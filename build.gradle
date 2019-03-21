@@ -9,7 +9,7 @@ compileJava.options.encoding = 'UTF-8'
 
 group = 'com.github.zakgof'
 archivesBaseName = 'actr'
-version = '0.0.5'
+version = '0.0.6'
 
 ext {
    descr = 'Simple Java actor model implementation'
