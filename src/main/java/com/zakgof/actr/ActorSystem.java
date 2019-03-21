@@ -45,6 +45,8 @@ public class ActorSystem {
 		for (ActorImpl<?> actorRef : actors.values()) {
 			actorRef.destroy();
 		}
+		timer.shutdown();
+		// TODO: release dedicated threads
 		terminator.complete("shutdown");
 	}
 	

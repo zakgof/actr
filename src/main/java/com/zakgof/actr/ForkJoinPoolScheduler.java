@@ -12,7 +12,7 @@ public class ForkJoinPoolScheduler implements IActorScheduler {
 	private Map<Object, ConcurrentLinkedQueue<Runnable>> delayed = new ConcurrentHashMap<>();
 
 	public ForkJoinPoolScheduler() {
-		pool = new ForkJoinPool(2); // .commonPool();
+		pool = ForkJoinPool.commonPool();
 	}
 
 	@Override

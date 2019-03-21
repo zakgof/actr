@@ -5,7 +5,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class ActorImpl<T> implements ActorRef<T> {
+class ActorImpl<T> implements ActorRef<T> {
 	
 	private volatile T object;
 	private final ActorSystem actorSystem;
