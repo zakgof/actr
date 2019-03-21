@@ -4,8 +4,9 @@ import java.util.Random;
 
 import com.zakgof.actr.ActorRef;
 import com.zakgof.actr.ActorSystem;
+import com.zakgof.actr.Actr;
 
-public class ActrExample {
+public class AskTellLaterExample {
 	
 	
 	
@@ -17,8 +18,7 @@ public class ActrExample {
 		
 		looperActor.tell(Looper::run);
 		
-		Thread.sleep(60000);
-		ActorSystem.dflt().shutdown();
+		system.shutdownCompletable().join();
 		
 	}
 
@@ -44,8 +44,10 @@ public class ActrExample {
 	
 	public static class Looper {
 
-		private ActorRef<Printer> printerActor;
-		private ActorRef<Randomizer> randomizerActor;
+		private final ActorRef<Printer> printerActor;
+		private final ActorRef<Randomizer> randomizerActor;
+		
+		private int iteration = 0;
 
 		public Looper(ActorRef<Printer> printerActor, ActorRef<Randomizer> randomizerActor) {
 			this.printerActor = printerActor;
@@ -53,10 +55,14 @@ public class ActrExample {
 		}
 		
 		private void run() {
-			printerActor.tell(printer -> printer.print("Looper: >>>"));
+			iteration++;
+			printerActor.tell(printer -> printer.print("Looper: iteration " + iteration));
 			randomizerActor.ask(Randomizer::random, this::showRandom);
-	//		ActorSystem.dflt().callerActor(this).later(Looper::run, 1000);
-			printerActor.tell(printer -> printer.print("Looper: <<<"));
+			if (iteration < 10) {
+				Actr.<Looper>current().later(Looper::run, 1000);
+			} else {
+				Actr.system().shutdown();
+			}
 		}
 		
 		private void showRandom(int rand) {

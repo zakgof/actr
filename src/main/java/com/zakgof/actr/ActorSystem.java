@@ -1,5 +1,7 @@
 package com.zakgof.actr;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
@@ -8,6 +10,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class ActorSystem {
@@ -120,5 +123,42 @@ public class ActorSystem {
 		timer.schedule(runnable, ms, TimeUnit.MILLISECONDS);
 	}
 
+	public <I, T> ForkBuilder<I, T> forkBuilder() {
+		return new ForkBuilder<>();
+	}
 
+	public interface TernaryConsumer<A, B, C> {
+		void accept(A a, B b, C c);
+	}
+	
+	public class ForkBuilder<I, T> {
+
+		private List<I> ids;
+		private Function<I, T> constructor;
+
+		public ForkBuilder<I, T> ids(@SuppressWarnings("unchecked") I... ids) {
+			this.ids = Arrays.asList(ids);
+			return this;
+		}
+		
+		public ForkBuilder<I, T> constructor(Function<I, T> constructor) {
+			this.constructor = constructor;
+			return this;
+		}
+		
+		public <R> void ask(TernaryConsumer<I, T, Consumer<R>> action, Consumer<Map<I, R>> result) {
+			
+			Map<I, R> map = new ConcurrentHashMap<>();
+			for (I id : ids) {
+				ActorRef<T> actor = actorOf(() ->  constructor.apply(id));
+				Consumer<R> callback = r -> {
+					map.put(id, r);
+					if (map.size() == ids.size()) {
+						result.accept(map);
+					}
+				};
+				actor.ask((target, c) -> action.accept(id, target, c) , callback);
+			}
+		}
+	}
 }

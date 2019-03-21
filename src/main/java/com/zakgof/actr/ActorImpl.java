@@ -1,5 +1,6 @@
 package com.zakgof.actr;
 
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -63,13 +64,14 @@ public class ActorImpl<T> implements ActorRef<T> {
 		);
 	}
 	
+	@Override
+	public <R> void ask(BiConsumer<T, Consumer<R>> action, Consumer<R> consumer) {
+		tell(target -> action.accept(target, result -> Actr.caller().tell(c -> consumer.accept(result))));		
+	}
 	
 	@Override
 	public <R> void ask(Function<T, R> call, Consumer<R> consumer) {
-		tell(target -> {
-			R result = call.apply(object);
-			Actr.caller().tell(c -> consumer.accept(result));
-		});
+		ask((target, callback) -> callback.accept(call.apply(target)), consumer);
 	}
 
 	T object() {
