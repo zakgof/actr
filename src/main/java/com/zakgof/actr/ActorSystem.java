@@ -15,7 +15,7 @@ import java.util.function.Supplier;
 
 public class ActorSystem {
 	
-	private final IActorScheduler scheduler = new ForkJoinPoolScheduler();
+	private final IActorScheduler scheduler = new ForkJoinPoolScheduler(10);
 
 	private static final ActorSystem DEFAULT = new ActorSystem("default");
 	private String name;
