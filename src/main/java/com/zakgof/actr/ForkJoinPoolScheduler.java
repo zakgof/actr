@@ -28,7 +28,7 @@ public class ForkJoinPoolScheduler implements IActorScheduler {
 	public void schedule(Runnable raw, Object actorId) {
 		
 		Runnable task = () -> {
-			Mailbox mailbox = delayed.compute(actorId, (a, l) -> {if (l == null) return new Mailbox(); else return l;});
+			Mailbox mailbox = delayed.computeIfAbsent(actorId, k -> new Mailbox());
 			mailbox.queue.add(raw);
 			int before = mailbox.queued.getAndIncrement();
 			// System.err.println("Add to mailbox, was: " + before);
