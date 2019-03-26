@@ -44,12 +44,12 @@ public class ForkJoinPoolScheduler implements IActorScheduler {
 		int processed = 0;
 		for (;;) {
 			Runnable runnable = mailbox.queue.poll(); 
-			if (runnable != null) {
-				runnable.run();
-				processed++;
-				if (processed >= throughput)
-					break;
-			}
+			if (runnable == null)
+				break;
+			runnable.run();
+			processed++;
+			if (processed >= throughput)
+				break;
 		}
 		int remaining = mailbox.queued.addAndGet(-processed);
 		// System.err.println("   Processed " + processed);
