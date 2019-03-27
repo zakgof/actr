@@ -13,6 +13,7 @@ public class ForkJoinPoolScheduler implements IActorScheduler {
 	private final ForkJoinPool pool;
 	private final int throughput;
 	private final Map<Object, Mailbox> delayed = new ConcurrentHashMap<>();
+	private boolean shutdown = false;
 
 	public ForkJoinPoolScheduler(int throughput) {
 		this.pool = ForkJoinPool.commonPool();
@@ -26,6 +27,10 @@ public class ForkJoinPoolScheduler implements IActorScheduler {
 
 	@Override
 	public void schedule(Runnable raw, Object actorId) {
+		
+		if (shutdown) {
+			return;
+		}
 		
 		Runnable task = () -> {
 			Mailbox mailbox = delayed.computeIfAbsent(actorId, k -> new Mailbox());
@@ -61,8 +66,7 @@ public class ForkJoinPoolScheduler implements IActorScheduler {
 
 	@Override
 	public void destroy() {
-		// TODO Auto-generated method stub
-		
+		this.shutdown = true;
 	}
 
 

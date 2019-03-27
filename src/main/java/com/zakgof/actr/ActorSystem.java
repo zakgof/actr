@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -41,13 +42,11 @@ public class ActorSystem {
 		return new ActorSystem(name);
 	}
 
-	public void shutdown() { // TODO : thread safety !!!
-		for (ActorImpl<?> actorRef : actors.values()) {
-			actorRef.destroy();
-		}
+	public void shutdown() {
+		scheduler.destroy();
 		timer.shutdown();
-		// TODO: release dedicated threads
 		terminator.complete("shutdown");
+		actors.clear();
 	}
 	
 	public CompletableFuture<String> shutdownCompletable() {
@@ -75,13 +74,14 @@ public class ActorSystem {
 		private ActorSystem actorSystem;
 		private T object;
 		private Supplier<T> constructor;
-		private Consumer<T> destructor;
 		private IActorScheduler scheduler;
 		private String name;
+		private BiConsumer<T, Exception> exceptionHandler; 
 
 		public ActorBuilder(ActorSystem actorSystem) {
 			this.actorSystem = actorSystem;
 			this.scheduler = actorSystem.scheduler;
+			this.exceptionHandler = (obj, ex) -> ex.printStackTrace();
 		}
 		
 		public ActorBuilder<T> object(T object) {
@@ -99,13 +99,13 @@ public class ActorSystem {
 			return this;
 		}
 		
-		public ActorBuilder<T> destructor(Consumer<T> destructor) {
-			this.destructor = destructor;
+		public ActorBuilder<T> scheduler(IActorScheduler scheduler) {
+			this.scheduler = scheduler;
 			return this;
 		}
 		
-		public ActorBuilder<T> scheduler(IActorScheduler scheduler) {
-			this.scheduler = scheduler;
+		public ActorBuilder<T> exceptionHandler(BiConsumer<T, Exception> exceptionHandler) {
+			this.exceptionHandler = exceptionHandler;
 			return this;
 		}
 		
@@ -115,7 +115,7 @@ public class ActorSystem {
 			if (constructor == null && object == null)
 				throw new IllegalArgumentException("Provide either object or constructor");
 			
-			ActorRef<T> actorRef = new ActorImpl<T>(object, constructor, destructor, scheduler, actorSystem, name);
+			ActorRef<T> actorRef = new ActorImpl<T>(object, constructor, scheduler, actorSystem, name, exceptionHandler);
 			return actorRef;
 		}
 
