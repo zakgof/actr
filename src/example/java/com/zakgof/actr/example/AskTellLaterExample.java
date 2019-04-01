@@ -11,7 +11,7 @@ public class AskTellLaterExample {
 	
 	
 	public static void main(String[] args) throws InterruptedException {
-		ActorSystem system = ActorSystem.dflt();
+		ActorSystem system = ActorSystem.create("example");
 		final ActorRef<Printer> printerActor = system.actorOf(Printer::new);
 		final ActorRef<Randomizer> randomizerActor = system.actorOf(Randomizer::new);
 		final ActorRef<Looper> looperActor = system.actorOf(() -> new Looper(printerActor, randomizerActor));

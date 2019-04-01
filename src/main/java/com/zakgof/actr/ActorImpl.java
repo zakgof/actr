@@ -12,11 +12,15 @@ class ActorImpl<T> implements ActorRef<T> {
 	private final IActorScheduler scheduler;
 	private final String name;
 	private final BiConsumer<T, Exception> exceptionHandler;
+	private final boolean owningScheduler;
+	private final Consumer<T> destructor;
 	
-	ActorImpl(T object, Supplier<T> constructor, IActorScheduler scheduler, ActorSystem actorSystem, String name, BiConsumer<T, Exception> exceptionHandler) {
+	ActorImpl(T object, Supplier<T> constructor, IActorScheduler scheduler, boolean owningScheduler, ActorSystem actorSystem, String name, BiConsumer<T, Exception> exceptionHandler, Consumer<T> destructor) {
 		this.actorSystem = actorSystem;
 		this.exceptionHandler = exceptionHandler;
 		this.name = name;
+		this.owningScheduler = owningScheduler;
+		this.destructor = destructor;
 		if (object != null) {
 			this.object = object;
 		}
@@ -41,6 +45,8 @@ class ActorImpl<T> implements ActorRef<T> {
 			Actr.setCurrent(this);
 			Actr.setCaller(caller);
 			try {
+				if (object == null)
+					return;
 				action.accept(object);
 			} catch (Exception e) {
 				exceptionHandler.accept(object, e);
@@ -54,8 +60,11 @@ class ActorImpl<T> implements ActorRef<T> {
 	@Override
 	public void later(Consumer<T> action, long ms) {
 		ActorRef<?> caller = Actr.current();
-		actorSystem.later(() -> 
-			scheduleCall(action, caller), ms
+		actorSystem.later(() -> {
+				if (object != null) {
+					scheduleCall(action, caller);
+				}
+			}, ms
 		);
 	}
 	
@@ -75,7 +84,7 @@ class ActorImpl<T> implements ActorRef<T> {
 	
 	@Override
 	public String toString() {
-		return "[Actor: " + name + "]";
+		return "[Actor: " + (name == null ? (object == null ? "<disposed>" : object.getClass().getSimpleName()) : name) + "]";
 	}
 
 	@Override
@@ -93,6 +102,25 @@ class ActorImpl<T> implements ActorRef<T> {
 		if (scheduler instanceof DedicatedThreadScheduler) {
 			scheduler.destroy();
 		}
+	}
+
+	public void dispose(Runnable whenFinished) {
+		tell(o -> {
+			if (destructor != null) {
+				try {
+					destructor.accept(object);
+				} catch (Exception ex) {
+					ex.printStackTrace(); // TODO: logging
+				}
+			}
+			system().remove(this);
+			if (owningScheduler) {
+				scheduler.destroy();
+			}
+			object = null;
+			whenFinished.run();
+		});
+		
 	}
 
 }
