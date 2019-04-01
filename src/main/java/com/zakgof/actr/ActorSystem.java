@@ -1,6 +1,8 @@
 package com.zakgof.actr;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -9,6 +11,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -27,6 +31,9 @@ public class ActorSystem {
 		return thread;
 	});
 
+	private volatile AtomicBoolean isShuttingDown = new AtomicBoolean();
+	private volatile boolean isShutDown;
+	
 	public ActorSystem(String name) {
 		this.name = name;
 	}
@@ -39,14 +46,27 @@ public class ActorSystem {
 		return new ActorSystem(name);
 	}
 
-	public void shutdown() { // TODO : thread safety !!!
-		for (ActorImpl<?> actorRef : actors.values()) {
-			actorRef.destroy();
+	public void shutdown() {
+		if (this == DEFAULT) {
+			throw new RuntimeException("Cannot terminate default actor system");
 		}
-		scheduler.destroy();
-		timer.shutdown();
-		// TODO: release dedicated threads
-		terminator.complete("shutdown");
+		if (isShuttingDown.compareAndSet(false, true)) {
+			timer.execute(() -> {
+				Collection<ActorImpl<?>> actorRefs = new ArrayList<>(actors.values());
+				for(ActorImpl<?> actor : actorRefs) {
+					System.err.println("destroying actor " + actor);
+					actor.dispose(() ->  timer.execute(() -> {
+						System.err.println("finished destroying " + actor + ", actors remaining " + actors.size() + "  " + Thread.currentThread().getName());
+						if (actors.isEmpty()) {
+							scheduler.destroy();
+							timer.shutdownNow();
+							isShutDown = true;
+							terminator.complete("shutdown");
+						}
+					}));
+				}
+			});
+		}
 	}
 	
 	public CompletableFuture<String> shutdownCompletable() {
@@ -54,7 +74,20 @@ public class ActorSystem {
 	}
 
 	void add(ActorImpl<?> actorRef) {
+		checkShutdown();
 		actors.put(actorRef.object(), actorRef);
+	}
+	
+
+	void remove(ActorImpl<?> actorRef) {
+		actors.remove(actorRef.object());
+	}
+
+	private void checkShutdown() {
+		if (isShuttingDown.get())
+			throw new RuntimeException("Cannot add actor: actor system shutdown in progress");
+		if (isShutDown)
+			throw new RuntimeException("Cannot add actor: actor system is shut down");
 	}
 
 	public <T> ActorBuilder<T> actorBuilder() {
@@ -76,11 +109,15 @@ public class ActorSystem {
 		private Supplier<T> constructor;
 		private Consumer<T> destructor;
 		private IActorScheduler scheduler;
+		private boolean owningScheduler;
 		private String name;
+		private BiConsumer<T, Exception> exceptionHandler;
 
 		public ActorBuilder(ActorSystem actorSystem) {
+			actorSystem.checkShutdown();
 			this.actorSystem = actorSystem;
 			this.scheduler = actorSystem.scheduler;
+			this.exceptionHandler = (obj, ex) -> ex.printStackTrace();
 		}
 		
 		public ActorBuilder<T> object(T object) {
@@ -92,19 +129,25 @@ public class ActorSystem {
 			this.constructor = constructor;
 			return this;
 		}
+		
+		public ActorBuilder<T> destructor(Consumer<T> destructor) {
+			this.destructor = destructor;
+			return this;
+		}
 
 		public ActorBuilder<T> name(String name) {
 			this.name = name;
 			return this;
 		}
 		
-		public ActorBuilder<T> destructor(Consumer<T> destructor) {
-			this.destructor = destructor;
+		public ActorBuilder<T> scheduler(IActorScheduler scheduler, boolean owning) {
+			this.scheduler = scheduler;
+			this.owningScheduler = owning;
 			return this;
 		}
 		
-		public ActorBuilder<T> scheduler(IActorScheduler scheduler) {
-			this.scheduler = scheduler;
+		public ActorBuilder<T> exceptionHandler(BiConsumer<T, Exception> exceptionHandler) {
+			this.exceptionHandler = exceptionHandler;
 			return this;
 		}
 		
@@ -114,18 +157,16 @@ public class ActorSystem {
 			if (constructor == null && object == null)
 				throw new IllegalArgumentException("Provide either object or constructor");
 			
-			ActorRef<T> actorRef = new ActorImpl<T>(object, constructor, destructor, scheduler, actorSystem, name);
+			ActorRef<T> actorRef = new ActorImpl<T>(object, constructor, scheduler, owningScheduler, actorSystem, name, exceptionHandler, destructor);
 			return actorRef;
 		}
 
 	}
 
 	void later(Runnable runnable, long ms) {
-		timer.schedule(runnable, ms, TimeUnit.MILLISECONDS);
-	}
-
-	void remove(ActorImpl<?> actorImpl) {
-		actors.remove(actorImpl.object());
+		if (!timer.isShutdown() && !timer.isTerminated()) {
+			timer.schedule(runnable, ms, TimeUnit.MILLISECONDS);
+		}
 	}
 
 	public <I, T> ForkBuilder<I, T> forkBuilder() {
@@ -166,4 +207,5 @@ public class ActorSystem {
 			}
 		}
 	}
+
 }
