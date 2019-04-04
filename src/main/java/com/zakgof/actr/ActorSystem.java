@@ -57,6 +57,7 @@ public class ActorSystem {
 				Collection<ActorImpl<?>> actorRefs = new ArrayList<>(actors.values());
 				for(ActorImpl<?> actor : actorRefs) {
 					System.err.println("destroying actor " + actor);
+					// TODO : sync error here
 					actor.dispose(() ->  timer.execute(() -> {
 						System.err.println("finished destroying " + actor + ", actors remaining " + actors.size() + "  " + Thread.currentThread().getName());
 						if (actors.isEmpty()) {
