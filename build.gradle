@@ -20,12 +20,13 @@ repositories {
 }
 
 dependencies {
+	testCompile 'org.junit.jupiter:junit-jupiter:5.4.1'
 }
 
 sourceSets {
    test {
       java {
-        srcDirs = ['src/example/java']
+        srcDirs = ['src/example/java', 'src/test/java']
       }
    }
 }
