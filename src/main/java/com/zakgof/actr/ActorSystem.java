@@ -32,7 +32,7 @@ public class ActorSystem {
 
 	private CompletableFuture<String> terminator = new CompletableFuture<>();
 
-	private volatile AtomicBoolean isShuttingDown = new AtomicBoolean();
+	private AtomicBoolean isShuttingDown = new AtomicBoolean();
 	private volatile boolean isShutDown;
 	
 
@@ -48,19 +48,18 @@ public class ActorSystem {
 		return new ActorSystem(name);
 	}
 
-	public void shutdown() {
+	public CompletableFuture<String> shutdown() {
 		if (this == DEFAULT) {
 			throw new RuntimeException("Cannot terminate default actor system");
 		}
 		if (isShuttingDown.compareAndSet(false, true)) {
 			timer.execute(() -> {
 				Collection<ActorImpl<?>> actorRefs = new ArrayList<>(actors.values());
+				int[] actorsToGo = {actorRefs.size()};
 				for(ActorImpl<?> actor : actorRefs) {
-					System.err.println("destroying actor " + actor);
-					// TODO : sync error here
 					actor.dispose(() ->  timer.execute(() -> {
-						System.err.println("finished destroying " + actor + ", actors remaining " + actors.size() + "  " + Thread.currentThread().getName());
-						if (actors.isEmpty()) {
+						actorsToGo[0]--;
+						if (actorsToGo[0] == 0) {
 							scheduler.destroy();
 							timer.shutdownNow();
 							isShutDown = true;
@@ -70,6 +69,7 @@ public class ActorSystem {
 				}
 			});
 		}
+		return terminator;
 	}
 	
 	public CompletableFuture<String> shutdownCompletable() {

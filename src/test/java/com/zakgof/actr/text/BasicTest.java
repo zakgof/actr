@@ -2,6 +2,8 @@ package com.zakgof.actr.text;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import org.junit.jupiter.api.Test;
 
@@ -15,6 +17,13 @@ public class BasicTest {
 	private final ActorRef<Simple> simple = system.actorOf(Simple::new);
 	private final ActorRef<Master> master = system.actorOf(Master::new);
 	private final ActorRef<FourtySeven> fourtySeven = system.actorOf(FourtySeven::new);
+	private final ActorRef<Object> catcher = system.actorBuilder().constructor(Object::new).exceptionHandler((fs, e) -> caught(e)).build();
+	
+	private void caught(Exception exception) {
+		assertEquals(catcher, Actr.current());
+		assertEquals("oops", exception.getMessage());
+		system.shutdown();
+	}
 	
 	
 	@Test
@@ -43,6 +52,17 @@ public class BasicTest {
 		assertNull(Actr.caller());
 		assertNull(Actr.current());
 		master.tell(Master::run);
+		system.shutdownCompletable().join();
+	}
+	
+	@Test
+	public void illegalAsk() {
+		assertThrows(RuntimeException.class, () -> fourtySeven.ask(FourtySeven::run, i -> fail("Illegal ask returned a value")));
+	}
+	
+	@Test
+	public void throwingTell() {
+		catcher.tell(fs -> {throw new RuntimeException("oops");});
 		system.shutdownCompletable().join();
 	}
 	

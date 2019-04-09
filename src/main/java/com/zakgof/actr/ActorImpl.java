@@ -26,10 +26,7 @@ class ActorImpl<T> implements ActorRef<T> {
 		}
 		this.scheduler = scheduler == null ? new DedicatedThreadScheduler() : scheduler;
 		if (constructor != null) {
-			ActorRef<?> current = Actr.current();
-			Actr.setCurrent(this);
 			this.object = constructor.get();
-			Actr.setCurrent(current);
 		}
 		actorSystem.add(this);
 	}
