@@ -26,10 +26,7 @@ class ActorImpl<T> implements ActorRef<T> {
 		}
 		this.scheduler = scheduler == null ? new DedicatedThreadScheduler() : scheduler;
 		if (constructor != null) {
-			ActorRef<?> current = Actr.current();
-			Actr.setCurrent(this);
 			this.object = constructor.get();
-			Actr.setCurrent(current);
 		}
 		actorSystem.add(this);
 	}
@@ -61,16 +58,22 @@ class ActorImpl<T> implements ActorRef<T> {
 	public void later(Consumer<T> action, long ms) {
 		ActorRef<?> caller = Actr.current();
 		actorSystem.later(() -> {
-				if (object != null) {
-					scheduleCall(action, caller);
-				}
-			}, ms
-		);
+			if (object != null) {
+				scheduleCall(action, caller);
+			}
+		}, ms);
 	}
 	
 	@Override
 	public <R> void ask(BiConsumer<T, Consumer<R>> action, Consumer<R> consumer) {
-		tell(target -> action.accept(target, result -> Actr.caller().tell(c -> consumer.accept(result))));		
+		ActorRef<?> caller = Actr.current();
+		if (caller == null)
+			throw new IllegalStateException("It is not allowed to call ask from non-actor context. There's no actor to receive the response");
+		tell(target -> action.accept(target, result -> {
+			caller.tell(c -> {
+				consumer.accept(result);	
+			});	
+		}));		
 	}
 	
 	@Override
@@ -95,13 +98,6 @@ class ActorImpl<T> implements ActorRef<T> {
 	@Override
 	public <C> ActorRef<C> actorOf(Supplier<C> constructor, String name) {
 		return system().actorOf(constructor, this.name + "/" + name);
-	}
-	
-	@Override
-	protected void finalize() throws Throwable {
-		if (scheduler instanceof DedicatedThreadScheduler) {
-			scheduler.destroy();
-		}
 	}
 
 	public void dispose(Runnable whenFinished) {

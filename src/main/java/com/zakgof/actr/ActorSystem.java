@@ -24,16 +24,18 @@ public class ActorSystem {
 	private static final ActorSystem DEFAULT = new ActorSystem("default");
 	private String name;
 	private Map<Object, ActorImpl<?>> actors = new ConcurrentHashMap<>();
-	private CompletableFuture<String> terminator = new CompletableFuture<String>();
 	private ScheduledExecutorService timer = Executors.newSingleThreadScheduledExecutor(runnable -> {
 		Thread thread = new Thread(runnable, "actr:" + name + ":timer");
 		thread.setPriority(8);
 		return thread;
 	});
 
-	private volatile AtomicBoolean isShuttingDown = new AtomicBoolean();
+	private CompletableFuture<String> terminator = new CompletableFuture<>();
+
+	private AtomicBoolean isShuttingDown = new AtomicBoolean();
 	private volatile boolean isShutDown;
 	
+
 	public ActorSystem(String name) {
 		this.name = name;
 	}
@@ -46,18 +48,18 @@ public class ActorSystem {
 		return new ActorSystem(name);
 	}
 
-	public void shutdown() {
+	public CompletableFuture<String> shutdown() {
 		if (this == DEFAULT) {
 			throw new RuntimeException("Cannot terminate default actor system");
 		}
 		if (isShuttingDown.compareAndSet(false, true)) {
 			timer.execute(() -> {
 				Collection<ActorImpl<?>> actorRefs = new ArrayList<>(actors.values());
+				int[] actorsToGo = {actorRefs.size()};
 				for(ActorImpl<?> actor : actorRefs) {
-					System.err.println("destroying actor " + actor);
 					actor.dispose(() ->  timer.execute(() -> {
-						System.err.println("finished destroying " + actor + ", actors remaining " + actors.size() + "  " + Thread.currentThread().getName());
-						if (actors.isEmpty()) {
+						actorsToGo[0]--;
+						if (actorsToGo[0] == 0) {
 							scheduler.destroy();
 							timer.shutdownNow();
 							isShutDown = true;
@@ -67,6 +69,7 @@ public class ActorSystem {
 				}
 			});
 		}
+		return terminator;
 	}
 	
 	public CompletableFuture<String> shutdownCompletable() {

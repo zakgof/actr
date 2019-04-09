@@ -9,7 +9,7 @@ compileJava.options.encoding = 'UTF-8'
 
 group = 'com.github.zakgof'
 archivesBaseName = 'actr'
-version = '0.1.1'
+version = '0.2.0'
 
 ext {
    descr = 'Simple Java actor model implementation'
@@ -20,12 +20,13 @@ repositories {
 }
 
 dependencies {
+	testCompile 'org.junit.jupiter:junit-jupiter:5.4.1'
 }
 
 sourceSets {
    test {
       java {
-        srcDirs = ['src/example/java']
+        srcDirs = ['src/example/java', 'src/test/java']
       }
    }
 }
