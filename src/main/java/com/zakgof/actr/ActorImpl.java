@@ -95,12 +95,7 @@ class ActorImpl<T> implements ActorRef<T> {
 		return actorSystem;
 	}
 
-	@Override
-	public <C> ActorRef<C> actorOf(Supplier<C> constructor, String name) {
-		return system().actorOf(constructor, this.name + "/" + name);
-	}
-
-	public void dispose(Runnable whenFinished) {
+	void dispose(Runnable whenFinished) {
 		tell(o -> {
 			if (destructor != null) {
 				try {

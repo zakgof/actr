@@ -3,7 +3,6 @@ package com.zakgof.actr;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 public interface ActorRef<T> {
 
@@ -34,23 +33,33 @@ public interface ActorRef<T> {
 	void later(Consumer<T> action, long ms);
 
 	/**
-	 * Sends a message to actor and get a response.
+	 * Sends a message to actor and gets a response.
 	 * 
-	 * Performs the specified call on the actor's object asynchronously. The call is executed in the actor's thread context, the response consumer is called in the caller's actor thread context.
+	 * Performs the specified call on the actor's object asynchronously.
+	 * The call is executed in this actor's thread context, the return value from the action is then passed to the consumer in the caller's actor thread context.
 	 * If the method is called not from actor's context, exception is thrown.
+	 * 
 	 * This method does not wait for response, it returns immediately.
 	 * 
-	 * @param call action to be executed on actor's object 
+	 * @param action action to be executed on actor's object, return value will be the response
 	 * @param consumer consumer to receive the response 
 	 *  
 	 */
-	<R> void ask(Function<T, R> call, Consumer<R> consumer);
+	<R> void ask(Function<T, R> action, Consumer<R> consumer);
 	
+	/**
+	 * Sends a message to actor and gets a response.
+	 * 
+	 * Performs the specified call on the actor's object asynchronously. 
+	 * The call is executed in this actor's thread context. The action get a response consumer as an additional parameter, it should pass the result to that consumer. The response in passed to the caller's consumer in the caller's actor thread context.
+	 * If the method is called not from actor's context, exception is thrown.
+	 * 
+	 * This method does not wait for response, it returns immediately.
+	 * 
+	 * @param action action to be executed on actor's object, 
+	 * @param consumer consumer to receive the response 
+	 *  
+	 */
 	<R> void ask(BiConsumer<T, Consumer<R>> action, Consumer<R> consumer);
 	
-	
-
-	public <C> ActorRef<C> actorOf(Supplier<C> constructor, String name);
-	
-
 }
