@@ -4,6 +4,11 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+/**
+ * Interface for addressing actors.
+ *
+ * @param <T> actor POJO class
+ */
 public interface ActorRef<T> {
 
 	/** 
