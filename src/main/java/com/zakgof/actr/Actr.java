@@ -15,6 +15,7 @@ public class Actr {
      * 
      * Returns null if called not from from actor context
      * 
+     * @param <T> actor POJO class
      * @return {@link ActorRef} for the actor being called
      */
     @SuppressWarnings("unchecked")
@@ -31,6 +32,7 @@ public class Actr {
      * 
      * For ask/later calls not from actor context, this method returns null
      * 
+     * @param <T> actor POJO class
      * @return {@link ActorRef} for the caller actor, or null if called not from actor context or from an actor called from outside any actor context
      */
     @SuppressWarnings("unchecked")

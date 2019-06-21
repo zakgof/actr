@@ -45,7 +45,7 @@ Actr outperforms Akka on common actor operations. A complete opensource benchmar
 
 #### Gradle
 ````groovy
-compile 'com.github.zakgof:actr:0.2.0'
+compile 'com.github.zakgof:actr:0.2.1'
 ````
 
 #### Maven
@@ -53,7 +53,7 @@ compile 'com.github.zakgof:actr:0.2.0'
 <dependency>
   <groupId>com.github.zakgof</groupId>
   <artifactId>actr</artifactId>
-  <version>0.2.0</version>
+  <version>0.2.1</version>
 </dependency>
 ````
 

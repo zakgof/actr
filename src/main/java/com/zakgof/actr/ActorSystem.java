@@ -71,8 +71,7 @@ public class ActorSystem {
      * 
      * Clients may use {@link shutdownCompletable} to be notified when the shutdown procedure completes.
      * 
-     * @param name actor system name
-     * @return newly created actor system
+     * @return CompletableFuture that client may use to be notified when shutdown completes; the supplied string is shutdown reason
      */
     public CompletableFuture<String> shutdown() {
         if (isShuttingDown.compareAndSet(false, true)) {
@@ -132,7 +131,8 @@ public class ActorSystem {
      * Create a new actor under this system with a specified POJO instance factory and name.
      * 
      * @param <T> actor POJO class
-     * @param constructor factory to create actor POJO class instance.
+     * @param constructor factory to create actor POJO class instance
+     * @param name actor name
      * @return ActorRef actor reference
      */
     public <T> ActorRef<T> actorOf(Supplier<T> constructor, String name) {
@@ -183,7 +183,7 @@ public class ActorSystem {
          * 
          * Constructor will be called during {@link #build()} call in a synchronous manner
          * 
-         * @param actor POJO class instance factory
+         * @param constructor POJO class instance factory
          * @return this builder
          */
         public ActorBuilder<T> constructor(Supplier<T> constructor) {
@@ -192,9 +192,9 @@ public class ActorSystem {
         }
 
         /**
-         * Adds a factory for POJO class instance creation to be used with the actor being constructed.
+         * Adds a destructor to be called in actor thread context when the actor is being destroyed.
          * 
-         * @param actor POJO class instance factory
+         * @param destructor action to be called on actor destruction
          * @return this builder
          */
         public ActorBuilder<T> destructor(Consumer<T> destructor) {

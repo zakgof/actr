@@ -43,9 +43,9 @@ public interface ActorRef<T> {
      * 
      * This method does not wait for response, it returns immediately.
      * 
+     * @param <R> actor call response class
      * @param action action to be executed on actor's object, return value will be the response
      * @param consumer consumer to receive the response
-     * 
      */
     <R> void ask(Function<T, R> action, Consumer<R> consumer);
 
@@ -57,9 +57,9 @@ public interface ActorRef<T> {
      * 
      * This method does not wait for response, it returns immediately.
      * 
-     * @param action action to be executed on actor's object,
+     * @param <R> actor call response class
+     * @param action action to be executed on actor's object
      * @param consumer consumer to receive the response
-     * 
      */
     <R> void ask(BiConsumer<T, Consumer<R>> action, Consumer<R> consumer);
 
