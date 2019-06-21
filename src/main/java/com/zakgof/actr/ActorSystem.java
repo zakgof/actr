@@ -1,9 +1,7 @@
 package com.zakgof.actr;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
@@ -13,6 +11,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -21,7 +20,7 @@ public class ActorSystem {
 
     private static final int DEFAULT_FORKJOINSCHEDULER_THROUGHPUT = 10;
 
-    private final IActorScheduler scheduler = new ForkJoinPoolScheduler(DEFAULT_FORKJOINSCHEDULER_THROUGHPUT);
+    private final IActorScheduler scheduler;
 
     private final String name;
     private final Map<Object, ActorImpl<?>> actors = new ConcurrentHashMap<>();
@@ -39,11 +38,23 @@ public class ActorSystem {
      * @return newly created actor system
      */
     public static ActorSystem create(String name) {
-        return new ActorSystem(name);
+        return new ActorSystem(name, new ForkJoinPoolScheduler(DEFAULT_FORKJOINSCHEDULER_THROUGHPUT));
+    }
+    
+    /**
+     * Create a new actor system with the specified name
+     * 
+     * @param name actor system name
+     * @param scheduler default scheduler for new actors
+     * @return newly created actor system
+     */
+    public static ActorSystem create(String name, IActorScheduler scheduler) {
+        return new ActorSystem(name, scheduler);
     }
 
-    private ActorSystem(String name) {
+    private ActorSystem(String name, IActorScheduler scheduler) {
         this.name = name;
+        this.scheduler = scheduler;
         this.timer = Executors.newSingleThreadScheduledExecutor(runnable -> {
             Thread thread = new Thread(runnable, "actr:" + name + ":timer");
             thread.setPriority(8);
@@ -254,8 +265,15 @@ public class ActorSystem {
         return "ActorSystem " + name;
     }
 
-    public <I, T> ForkBuilder<I, T> forkBuilder() {
-        return new ForkBuilder<>();
+    public <T> void executeAsActor(T instance, Consumer<ActorRef<T>> call) {
+        BlockingThreadScheduler blockingThreadScheduler = new BlockingThreadScheduler();
+        ActorRef<T> actor = this.<T>actorBuilder().object(instance).scheduler(blockingThreadScheduler, false).build();
+        actor.tell(obj -> call.accept(actor));
+        blockingThreadScheduler.start();
+    }
+
+    public <I, T> ForkBuilder<I, T> forkBuilder(Collection<I> ids) {
+        return new ForkBuilder<I, T>().ids(ids);
     }
 
     public interface TernaryConsumer<A, B, C> {
@@ -264,11 +282,13 @@ public class ActorSystem {
 
     public class ForkBuilder<I, T> {
 
-        private List<I> ids;
+        private Collection<I> ids;
         private Function<I, T> constructor;
+        private Function<I, IActorScheduler> scheduler = $ -> ActorSystem.this.scheduler;
+        private boolean owningScheduler = false;
 
-        public ForkBuilder<I, T> ids(@SuppressWarnings("unchecked") I... ids) {
-            this.ids = Arrays.asList(ids);
+        public ForkBuilder<I, T> ids(Collection<I> ids) {
+            this.ids = ids;
             return this;
         }
 
@@ -276,12 +296,25 @@ public class ActorSystem {
             this.constructor = constructor;
             return this;
         }
+        
+        public ForkBuilder<I, T> scheduler(Function<I, IActorScheduler> scheduler, boolean owningScheduler) {
+            this.scheduler = scheduler;
+            this.owningScheduler = owningScheduler;
+            return this;
+        }
+
+        public <R> void ask(BiFunction<I, T, R> action, Consumer<Map<I, R>> result) {
+            ask((id, pojo, resultConsumer) -> resultConsumer.accept(action.apply(id, pojo)), result);
+        }
 
         public <R> void ask(TernaryConsumer<I, T, Consumer<R>> action, Consumer<Map<I, R>> result) {
 
             Map<I, R> map = new ConcurrentHashMap<>();
             for (I id : ids) {
-                ActorRef<T> actor = actorOf(() -> constructor.apply(id));
+                ActorRef<T> actor = ActorSystem.this.<T>actorBuilder()
+                    .constructor(() -> constructor.apply(id))
+                    .scheduler(scheduler.apply(id), owningScheduler)
+                    .build();
                 Consumer<R> callback = r -> {
                     map.put(id, r);
                     if (map.size() == ids.size()) {

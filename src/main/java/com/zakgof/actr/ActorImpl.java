@@ -95,6 +95,7 @@ class ActorImpl<T> implements ActorRef<T> {
         return actorSystem;
     }
 
+    /** Called internally from system */
     void dispose(Runnable whenFinished) {
         tell(o -> {
             if (destructor != null) {
@@ -112,6 +113,11 @@ class ActorImpl<T> implements ActorRef<T> {
             whenFinished.run();
         });
 
+    }
+
+    @Override
+    public void destroy() {
+        dispose(() -> {});
     }
 
 }

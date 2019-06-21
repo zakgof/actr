@@ -63,4 +63,15 @@ public interface ActorRef<T> {
      */
     <R> void ask(BiConsumer<T, Consumer<R>> action, Consumer<R> consumer);
 
+    /**
+     * Destroy the actor.
+     * 
+     * If defined, destructor will be called in actor's thread context.
+     * 
+     * If actor had a dedicated scheduler, the scheduler will be destroyed as well.
+     * 
+     * Messages pending for this actor will be processed before terminating (TODO ??) 
+     */
+    void destroy();
+
 }

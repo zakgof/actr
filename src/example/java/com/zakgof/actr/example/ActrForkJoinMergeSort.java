@@ -53,8 +53,7 @@ public class ActrForkJoinMergeSort {
 				int[] left  = Arrays.copyOfRange(array, 0, array.length / 2);
 				int[] right = Arrays.copyOfRange(array, array.length / 2, array.length);
 	
-				Actr.system().<Integer, Sorter>forkBuilder()
-					.ids(0, 1)
+				Actr.system().<Integer, Sorter>forkBuilder(Arrays.asList(0, 1))
 					.constructor(id -> new Sorter())
 					.<int[]>ask((id, sorter, cb) -> sorter.run(id == 0 ? left : right, cb), map -> join(map, callback));
 			}
