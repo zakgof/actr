@@ -4,15 +4,26 @@
 
 Simple actor model implementation for Java
 
-- Simple API
-- POJOs as Actors
-- Type safe
+- Simple API: sending _ask_ and _tell_ messages is just calling class methods
+- POJOs as Actors: focus on business logics, no need to extend any frameworks classes
+- Type safe: no need for instanceof/cast
+- High performance: lock-free implementation and lightweight actor creation
 
-A thread is created for every Actor.
-POJO object methods run in its Actor's thread when ActorRef API is used.
-When an `ask` call is invoked, the response is transferred to the caller's actor thread.
+Actor code in guaranteed to be executed in thread-safe context:
+- no concurrent calls for a particular actor
+- actor state can be safely read/written from actor code without any synchronized/volatile specifiers
 
-#### Why not Akka ?
+#### Schedulers
+
+Two schedulers are available for actors:
+
+- Dedicated thread scheduler
+Each actor owns a thread and all calls to the actor execute in that dedicated thread.
+
+- Shared ForkJoinPool scheduler
+All actors share a common work stealing ForkJoinPool
+
+#### Comparison to akka
 
 Akka will require more boilerplate code. Code with Actr will be more concise.
 
@@ -27,11 +38,14 @@ Akka will require more boilerplate code. Code with Actr will be more concise.
 Compare the same example implemented with
 [akka](https://github.com/akka/akka-quickstart-java.g8/tree/2.5.x/src/main/g8/src/main/java/com/lightbend/akka/sample) and [actr](https://github.com/zakgof/actr/tree/master/src/example/java/com/zakgof/actr/vsakka). (Note the difference in Printer implementation. With akka, the implementation is 41 lines long with only 1 line of business code (line 34))
 
+#### Performance
+Actr outperforms Akka on common actor operations. A complete opensource benchmark is available here: https://github.com/zakgof/akka-actr-benchmark
+
 ### Setup
 
 #### Gradle
 ````groovy
-compile 'com.github.zakgof:actr:0.0.3'
+compile 'com.github.zakgof:actr:0.2.1'
 ````
 
 #### Maven
@@ -39,7 +53,7 @@ compile 'com.github.zakgof:actr:0.0.3'
 <dependency>
   <groupId>com.github.zakgof</groupId>
   <artifactId>actr</artifactId>
-  <version>0.0.3</version>
+  <version>0.2.1</version>
 </dependency>
 ````
 
@@ -89,7 +103,5 @@ Call Printer from another actor
 ### A Bigger example
 https://github.com/zakgof/actr/blob/master/src/example/java/com/zakgof/actr/example/ActrExample.java
 
-### Benchmark actr vs akka
-https://github.com/zakgof/akka-actr-benchmark
 
 

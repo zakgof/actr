@@ -5,26 +5,26 @@ import java.util.concurrent.Executors;
 
 public class DedicatedThreadScheduler implements IActorScheduler {
 
-	private ExecutorService es;
-	
-	public DedicatedThreadScheduler() {
-		this.es = Executors.newSingleThreadExecutor();
-	}
+    private ExecutorService es;
 
-	public DedicatedThreadScheduler(String name) {
-		this.es = Executors.newSingleThreadExecutor(runnable -> new Thread(runnable, "actr:" + name));
-	}
+    public DedicatedThreadScheduler() {
+        this.es = Executors.newSingleThreadExecutor();
+    }
 
-	@Override
-	public void schedule(Runnable task, Object actorId) {
-		if (!es.isShutdown()) {
-			es.execute(task);
-		}
-	}
+    public DedicatedThreadScheduler(String name) {
+        this.es = Executors.newSingleThreadExecutor(runnable -> new Thread(runnable, "actr:" + name));
+    }
 
-	@Override
-	public void destroy() {
-		es.shutdown();
-	}
+    @Override
+    public void schedule(Runnable task, Object actorId) {
+        if (!es.isShutdown()) {
+            es.execute(task);
+        }
+    }
+
+    @Override
+    public void destroy() {
+        es.shutdown();
+    }
 
 }
