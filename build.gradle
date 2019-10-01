@@ -20,7 +20,7 @@ repositories {
 }
 
 dependencies {
-	testCompile 'org.junit.jupiter:junit-jupiter:5.4.1'
+	testCompile 'org.junit.jupiter:junit-jupiter:5.4.2'
 }
 
 sourceSets {
