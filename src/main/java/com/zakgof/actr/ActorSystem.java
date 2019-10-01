@@ -19,9 +19,10 @@ import java.util.function.Supplier;
 public class ActorSystem {
 
     private static final int DEFAULT_FORKJOINSCHEDULER_THROUGHPUT = 10;
+    private static final Object FAKE = new Object();
 
     private final Supplier<IActorScheduler> schedulerFactory;
-    private final Map<IActorScheduler, Void> schedulers = new ConcurrentHashMap<>();
+    private final Map<IActorScheduler, Object> schedulers = new ConcurrentHashMap<>();
 
     private final String name;
     private final Map<Object, ActorImpl<?>> actors = new ConcurrentHashMap<>();
@@ -178,7 +179,7 @@ public class ActorSystem {
             actorSystem.checkShutdown();
             this.actorSystem = actorSystem;
             this.scheduler = actorSystem.schedulerFactory.get();
-            actorSystem.schedulers.put(scheduler, null);
+            actorSystem.schedulers.put(scheduler, FAKE);
             this.exceptionHandler = (obj, ex) -> ex.printStackTrace();
         }
 
