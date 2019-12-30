@@ -1,9 +1,10 @@
 package com.zakgof.actr;
 
-public interface IActorScheduler {
+public interface IActorScheduler extends AutoCloseable {
 
     void schedule(Runnable task, Object actorId);
 
-    default void destroy() {
+    @Override
+	default void close() {
     };
 }

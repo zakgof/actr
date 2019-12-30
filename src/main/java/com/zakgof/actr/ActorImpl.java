@@ -107,7 +107,7 @@ class ActorImpl<T> implements ActorRef<T> {
             }
             system().remove(this);
             if (owningScheduler) {
-                scheduler.destroy();
+                scheduler.close();
             }
             object = null;
             whenFinished.run();
@@ -116,7 +116,7 @@ class ActorImpl<T> implements ActorRef<T> {
     }
 
     @Override
-    public void destroy() {
+    public void close() {
         dispose(() -> {});
     }
 

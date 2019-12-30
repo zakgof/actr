@@ -31,7 +31,7 @@ public class DedicatedThreadScheduler implements IActorScheduler {
 	}
 
 	@Override
-	public void destroy() {
+	public void close() {
 		es.shutdown();
 	}
 
