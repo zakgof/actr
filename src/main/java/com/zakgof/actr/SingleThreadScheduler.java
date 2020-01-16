@@ -32,7 +32,7 @@ public class SingleThreadScheduler implements IActorScheduler {
 
 	@Override
 	public void close() {
-		executor.close();
+		executor.shutdown();
 	}
 
 }
