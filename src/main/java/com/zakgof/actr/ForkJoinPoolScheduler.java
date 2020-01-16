@@ -9,7 +9,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Scheduler based on a shared work-stealing ForkJoinPool. Best for CPU-intense
- * actrs.
+ * actrs. Disposing the scheduler is no-op since the pool is common for the
+ * whole JVM.
  */
 public class ForkJoinPoolScheduler implements IActorScheduler {
 
@@ -29,6 +30,16 @@ public class ForkJoinPoolScheduler implements IActorScheduler {
 	}
 
 	@Override
+	public void actorCreated(Object actorId) {
+		delayed.put(actorId, new Mailbox());
+	}
+
+	@Override
+	public void actorDisposed(Object actorId) {
+		delayed.remove(actorId);
+	}
+
+	@Override
 	public void schedule(Runnable raw, Object actorId) {
 
 		if (shutdown) {
@@ -36,7 +47,7 @@ public class ForkJoinPoolScheduler implements IActorScheduler {
 		}
 
 		Runnable task = () -> {
-			Mailbox mailbox = delayed.computeIfAbsent(actorId, k -> new Mailbox());
+			Mailbox mailbox = delayed.get(actorId);
 			mailbox.queue.add(raw);
 			int before = mailbox.queued.getAndIncrement();
 			// System.err.println("Add to mailbox, was: " + before);

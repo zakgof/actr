@@ -20,7 +20,7 @@ public class ActorSystem {
 
     private static final int DEFAULT_FORKJOINSCHEDULER_THROUGHPUT = 10;
 
-    private final IActorScheduler scheduler;
+    private final IActorScheduler defaultScheduler;
 
     private final String name;
     private final Map<Object, ActorImpl<?>> actors = new ConcurrentHashMap<>();
@@ -32,29 +32,33 @@ public class ActorSystem {
     private volatile boolean isShutDown;
 
     /**
-     * Create a new actor system with the specified name
+     * Create a new actor system with the specified name.
+     *
+     * Default ForkJoinScheduler is used.
      *
      * @param name actor system name
      * @return newly created actor system
      */
     public static ActorSystem create(String name) {
-        return new ActorSystem(name, new ForkJoinPoolScheduler(DEFAULT_FORKJOINSCHEDULER_THROUGHPUT));
+        return new ActorSystem(name, Schedulers.newForkJoinPoolScheduler(DEFAULT_FORKJOINSCHEDULER_THROUGHPUT));
     }
 
     /**
-     * Create a new actor system with the specified name
+     * Create a new actor system with the specified name and scheduler factory.
+     *
+     * Scheduler factory will be used to create actors; actor will own the scheduler, i.e. each scheduler is disposed together with its owning actor.
      *
      * @param name actor system name
      * @param scheduler default scheduler for new actors
      * @return newly created actor system
      */
-    public static ActorSystem create(String name, IActorScheduler scheduler) {
-        return new ActorSystem(name, scheduler);
+    public static ActorSystem create(String name, IActorScheduler defaultScheduler) {
+        return new ActorSystem(name, defaultScheduler);
     }
 
-    private ActorSystem(String name, IActorScheduler scheduler) {
+    private ActorSystem(String name, IActorScheduler defaultScheduler) {
         this.name = name;
-        this.scheduler = scheduler;
+        this.defaultScheduler = defaultScheduler;
         this.timer = Executors.newSingleThreadScheduledExecutor(runnable -> {
             Thread thread = new Thread(runnable, "actr:" + name + ":timer");
             thread.setPriority(8);
@@ -82,7 +86,6 @@ public class ActorSystem {
                     actor.dispose(() -> timer.execute(() -> {
                         actorsToGo[0]--;
                         if (actorsToGo[0] == 0) {
-                            scheduler.close();
                             timer.shutdownNow();
                             isShutDown = true;
                             terminator.complete("shutdown");
@@ -156,14 +159,13 @@ public class ActorSystem {
         private Supplier<T> constructor;
         private Consumer<T> destructor;
         private IActorScheduler scheduler;
-        private boolean owningScheduler;
         private String name;
         private BiConsumer<T, Exception> exceptionHandler;
 
         private ActorBuilder(ActorSystem actorSystem) {
             actorSystem.checkShutdown();
             this.actorSystem = actorSystem;
-            this.scheduler = actorSystem.scheduler;
+            this.scheduler = actorSystem.defaultScheduler;
             this.exceptionHandler = (obj, ex) -> ex.printStackTrace();
         }
 
@@ -217,12 +219,10 @@ public class ActorSystem {
          * Sets a scheduler for the actor being constructed.
          *
          * @param scheduler scheduler to be used for the actor being constructed
-         * @param owning set {@code true} if the actor should own the scheduler and destroy it when the actor shuts down.
          * @return this builder
          */
-        public ActorBuilder<T> scheduler(IActorScheduler scheduler, boolean owning) {
+        public ActorBuilder<T> scheduler(IActorScheduler scheduler) {
             this.scheduler = scheduler;
-            this.owningScheduler = owning;
             return this;
         }
 
@@ -250,7 +250,7 @@ public class ActorSystem {
             if (constructor == null && object == null)
                 throw new IllegalArgumentException("Provide either object or constructor");
 
-            ActorRef<T> actorRef = new ActorImpl<T>(object, constructor, scheduler, owningScheduler, actorSystem, name, exceptionHandler, destructor);
+            ActorRef<T> actorRef = new ActorImpl<T>(object, constructor, scheduler, actorSystem, name, exceptionHandler, destructor);
             return actorRef;
         }
 
@@ -269,7 +269,7 @@ public class ActorSystem {
 
     public <T> void executeAsActor(T instance, Consumer<ActorRef<T>> call) {
         BlockingThreadScheduler blockingThreadScheduler = new BlockingThreadScheduler();
-        ActorRef<T> actor = this.<T>actorBuilder().object(instance).scheduler(blockingThreadScheduler, false).build();
+        ActorRef<T> actor = this.<T>actorBuilder().object(instance).scheduler(blockingThreadScheduler).build();
         actor.tell(obj -> call.accept(actor));
         blockingThreadScheduler.start();
     }
@@ -286,8 +286,7 @@ public class ActorSystem {
 
         private Collection<I> ids;
         private Function<I, T> constructor;
-        private Function<I, IActorScheduler> scheduler = $ -> ActorSystem.this.scheduler;
-        private boolean owningScheduler = false;
+        private Function<I, IActorScheduler> scheduler = $ -> ActorSystem.this.defaultScheduler;
 
         public ForkBuilder<I, T> ids(Collection<I> ids) {
             this.ids = ids;
@@ -299,9 +298,8 @@ public class ActorSystem {
             return this;
         }
 
-        public ForkBuilder<I, T> scheduler(Function<I, IActorScheduler> scheduler, boolean owningScheduler) {
+        public ForkBuilder<I, T> scheduler(Function<I, IActorScheduler> scheduler) {
             this.scheduler = scheduler;
-            this.owningScheduler = owningScheduler;
             return this;
         }
 
@@ -315,7 +313,7 @@ public class ActorSystem {
             for (I id : ids) {
                 ActorRef<T> actor = ActorSystem.this.<T>actorBuilder()
                     .constructor(() -> constructor.apply(id))
-                    .scheduler(scheduler.apply(id), owningScheduler)
+                    .scheduler(scheduler.apply(id))
                     .build();
                 Consumer<R> callback = r -> {
                     map.put(id, r);
