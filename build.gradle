@@ -7,6 +7,8 @@ plugins {
 }
 
 compileJava.options.encoding = 'UTF-8'
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 group = 'com.github.zakgof'
 archivesBaseName = 'actr'
