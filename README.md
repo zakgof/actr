@@ -6,22 +6,25 @@ Simple actor model implementation for Java
 
 - Simple API: sending _ask_ and _tell_ messages is just calling class methods
 - POJOs as Actors: focus on business logics, no need to extend any frameworks classes
-- Type safe: no need for instanceof/cast
+- Type safe: no need for instanceof/cast, compile time check prevents sending wrong message to a wrong actor
 - High performance: lock-free implementation and lightweight actor creation
 
-Actor code in guaranteed to be executed in thread-safe context:
-- no concurrent calls for a particular actor
+Actor code is guaranteed to be executed in thread-safe context:
+- no concurrent calls for a particular actor (although subsequent calls may be dispatched to different threads)
 - actor state can be safely read/written from actor code without any synchronized/volatile specifiers
 
 #### Schedulers
 
-Two schedulers are available for actors:
+Available actor schedulers:
 
-- Dedicated thread scheduler
-Each actor owns a thread and all calls to the actor execute in that dedicated thread.
+- Shared ForkJoinPool scheduler    
+All actors share the common work stealing `ForkJoinPool`. This option is best for CPU-intensive actors.
 
-- Shared ForkJoinPool scheduler
-All actors share a common work stealing ForkJoinPool
+- Dedicated thread scheduler    
+Each actor owns a thread and all calls to the actor execute in that dedicated thread. It is useful, in particular, when wrapping non thread safe API.   
+**NEW !** JDK's project Loom Virtual Threads (aka Fibers) are also supported.
+
+It's easy to introduce your own fine-tuned scheduler by just implementing `IActorScheduling`.
 
 #### Comparison to akka
 
@@ -45,7 +48,7 @@ Actr outperforms Akka on common actor operations. A complete opensource benchmar
 
 #### Gradle
 ````groovy
-compile 'com.github.zakgof:actr:0.2.1'
+compile 'com.github.zakgof:actr:0.3.0'
 ````
 
 #### Maven
@@ -53,7 +56,7 @@ compile 'com.github.zakgof:actr:0.2.1'
 <dependency>
   <groupId>com.github.zakgof</groupId>
   <artifactId>actr</artifactId>
-  <version>0.2.1</version>
+  <version>0.3.0</version>
 </dependency>
 ````
 
@@ -77,7 +80,7 @@ private static class Printer {
 Create an actor
 
 ````java
-final ActorRef<Printer> printerActor = ActorSystem.dflt().actorOf(Printer::new);
+final ActorRef<Printer> printerActor = ActorSystem.create("default").actorOf(Printer::new);
 ````
 
 Call Printer from another actor
