@@ -1,4 +1,4 @@
-package com.zakgof.actr.text;
+package com.zakgof.actr.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

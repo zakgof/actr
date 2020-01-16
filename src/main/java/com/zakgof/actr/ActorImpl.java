@@ -1,5 +1,6 @@
 package com.zakgof.actr;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -38,7 +39,11 @@ class ActorImpl<T> implements ActorRef<T> {
     }
 
     private void scheduleCall(Consumer<T> action, ActorRef<?> caller) {
-        scheduler.schedule(() -> {
+       scheduleCallErrorAware(action, caller, e -> exceptionHandler.accept(object, e));
+    }
+
+    private void scheduleCallErrorAware(Consumer<T> action, ActorRef<?> caller, Consumer<Exception> exceptionCallback) {
+    	scheduler.schedule(() -> {
             Actr.setCurrent(this);
             Actr.setCaller(caller);
             try {
@@ -46,7 +51,7 @@ class ActorImpl<T> implements ActorRef<T> {
                     return;
                 action.accept(object);
             } catch (Exception e) {
-                exceptionHandler.accept(object, e);
+                exceptionCallback.accept(e);
             } finally {
                 Actr.setCurrent(null);
                 Actr.setCaller(null);
@@ -66,20 +71,37 @@ class ActorImpl<T> implements ActorRef<T> {
 
     @Override
     public <R> void ask(BiConsumer<T, Consumer<R>> action, Consumer<R> consumer) {
-        ActorRef<?> caller = Actr.current();
-        if (caller == null)
-            throw new IllegalStateException("It is not allowed to call ask from non-actor context. There's no actor to receive the response");
-        tell(target -> action.accept(target, result -> {
-            caller.tell(c -> {
-                consumer.accept(result);
-            });
-        }));
+        ActorRef<?> caller = safeCaller();
+        Consumer<R> completion = result -> caller.tell(c -> consumer.accept(result));
+        tell(target -> action.accept(target, completion));
     }
 
     @Override
     public <R> void ask(Function<T, R> call, Consumer<R> consumer) {
         ask((target, callback) -> callback.accept(call.apply(target)), consumer);
     }
+
+    @Override
+    public <R> CompletableFuture<R> ask(BiConsumer<T, Consumer<R>> action) {
+    	ActorRef<?> caller = safeCaller();
+    	CompletableFuture<R> future = new CompletableFuture<>();
+    	Consumer<R> completion = result -> caller.tell(c -> future.complete(result));
+    	Consumer<Exception> failure = exception -> caller.tell(c -> future.completeExceptionally(exception));
+    	scheduleCallErrorAware(target -> action.accept(target, completion), caller, failure);
+    	return future;
+    }
+
+    @Override
+    public <R> CompletableFuture<R> ask(Function<T, R> action) {
+    	return ask((target, callback) -> callback.accept(action.apply(target)));
+    }
+
+	private static ActorRef<?> safeCaller() {
+		ActorRef<?> caller = Actr.current();
+        if (caller == null)
+            throw new IllegalStateException("It is not allowed to call ask from non-actor context. There's no actor to receive the response");
+		return caller;
+	}
 
     T object() {
         return object;
@@ -107,7 +129,7 @@ class ActorImpl<T> implements ActorRef<T> {
             }
             system().remove(this);
             if (owningScheduler) {
-                scheduler.destroy();
+                scheduler.close();
             }
             object = null;
             whenFinished.run();
@@ -116,7 +138,7 @@ class ActorImpl<T> implements ActorRef<T> {
     }
 
     @Override
-    public void destroy() {
+    public void close() {
         dispose(() -> {});
     }
 

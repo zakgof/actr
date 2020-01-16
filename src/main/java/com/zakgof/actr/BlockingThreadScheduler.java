@@ -14,7 +14,7 @@ public class BlockingThreadScheduler implements IActorScheduler {
     }
 
     @Override
-    public void destroy() {
+    public void close() {
         thread.interrupt();
     }
 
