@@ -49,7 +49,7 @@ public class ActorSystem {
      * Scheduler factory will be used to create actors; actor will own the scheduler, i.e. each scheduler is disposed together with its owning actor.
      *
      * @param name actor system name
-     * @param scheduler default scheduler for new actors
+     * @param defaultScheduler default scheduler for new actors
      * @return newly created actor system
      */
     public static ActorSystem create(String name, IActorScheduler defaultScheduler) {
