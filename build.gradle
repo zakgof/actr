@@ -3,6 +3,7 @@ plugins {
     id "maven"
     id "maven-publish"
     id "com.jfrog.bintray" version "1.8.4"
+    id 'com.adarshr.test-logger' version '1.6.0'
 }
 
 compileJava.options.encoding = 'UTF-8'
@@ -20,7 +21,7 @@ repositories {
 }
 
 dependencies {
-	testCompile 'org.junit.jupiter:junit-jupiter:5.4.1'
+	testImplementation 'org.junit.jupiter:junit-jupiter:5.6.0-RC1'
 }
 
 sourceSets {
