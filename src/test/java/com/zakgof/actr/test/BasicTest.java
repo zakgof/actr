@@ -26,13 +26,15 @@ import org.junit.jupiter.api.Test;
 import com.zakgof.actr.ActorRef;
 import com.zakgof.actr.ActorSystem;
 import com.zakgof.actr.Actr;
-import com.zakgof.actr.DedicatedThreadScheduler;
+import com.zakgof.actr.Schedulers;
 
 public class BasicTest {
 
-	private final ActorSystem system = ActorSystem.create("test");
+	private final ActorSystem system = ActorSystem.create("test", Schedulers.newThreadPerActorScheduler());
 
-	private final ActorRef<Master> master = system.<Master>actorBuilder().constructor(Master::new).scheduler(new DedicatedThreadScheduler("master"), true).build();
+	private final ActorRef<Master> master = system.<Master>actorBuilder()
+		.constructor(Master::new)
+		.build();
 	private ActorRef<TestActor> testActor;
 
 	@BeforeEach
@@ -40,11 +42,10 @@ public class BasicTest {
 		CheckPoints.clean();
 
 		testActor = system.<TestActor>actorBuilder()
-				.constructor(TestActor::new)
-				.destructor(TestActor::destructor)
-				.exceptionHandler((fs, e) -> fs.err(e))
-				.scheduler(new DedicatedThreadScheduler("test"), true)
-				.build();
+			.constructor(TestActor::new)
+			.destructor(TestActor::destructor)
+			.exceptionHandler((fs, e) -> fs.err(e))
+			.build();
 	}
 
 	@Test

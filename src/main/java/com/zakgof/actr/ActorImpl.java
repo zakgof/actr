@@ -13,19 +13,18 @@ class ActorImpl<T> implements ActorRef<T> {
     private final IActorScheduler scheduler;
     private final String name;
     private final BiConsumer<T, Exception> exceptionHandler;
-    private final boolean owningScheduler;
     private final Consumer<T> destructor;
 
-    ActorImpl(T object, Supplier<T> constructor, IActorScheduler scheduler, boolean owningScheduler, ActorSystem actorSystem, String name, BiConsumer<T, Exception> exceptionHandler, Consumer<T> destructor) {
+    ActorImpl(T object, Supplier<T> constructor, IActorScheduler scheduler, ActorSystem actorSystem, String name, BiConsumer<T, Exception> exceptionHandler, Consumer<T> destructor) {
         this.actorSystem = actorSystem;
         this.exceptionHandler = exceptionHandler;
         this.name = name;
-        this.owningScheduler = owningScheduler;
         this.destructor = destructor;
         if (object != null) {
             this.object = object;
         }
-        this.scheduler = scheduler == null ? new DedicatedThreadScheduler() : scheduler;
+        this.scheduler = scheduler;
+        scheduler.actorCreated(this);
         if (constructor != null) {
             this.object = constructor.get();
         }
@@ -128,9 +127,7 @@ class ActorImpl<T> implements ActorRef<T> {
                 }
             }
             system().remove(this);
-            if (owningScheduler) {
-                scheduler.close();
-            }
+            scheduler.actorDisposed(this);
             object = null;
             whenFinished.run();
         });
