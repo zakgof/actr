@@ -229,7 +229,9 @@ public class ActorSystem {
         /**
          * Sets an exception handler for the actor being constructed.
          *
-         * @param exceptionHandler exception handler to be triggered whenever an exception occurs in any actor call.
+         * Exception handler is triggered in actor's thread context whenever an exception occurs in actor's <i>ask</i>, <i>tell</i> or <i>later</i> call. Note that the exception handler is ignored when calling methods returning CallableFuture as in that case the exception is passed directly to the future.
+         *
+         * @param exceptionHandler exception handler to be triggered
          * @return this builder
          */
         public ActorBuilder<T> exceptionHandler(BiConsumer<T, Exception> exceptionHandler) {
