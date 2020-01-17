@@ -103,8 +103,8 @@ Call Printer from another actor
 
 ````
 
-### A Bigger example
-https://github.com/zakgof/actr/blob/master/src/example/java/com/zakgof/actr/example/ActrExample.java
+### More examples
+https://github.com/zakgof/actr/tree/master/src/example/java/com/zakgof/actr/example
 
 
 
