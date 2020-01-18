@@ -12,7 +12,7 @@ public class SingleThreadScheduler implements IActorScheduler {
 	private final ExecutorService executor;
 
 	public SingleThreadScheduler() {
-		this.executor = Executors.newSingleThreadExecutor();
+		this.executor = Executors.newSingleThreadExecutor(runnable -> new Thread(runnable, "actr:single"));
 	}
 
 	@Override
@@ -32,7 +32,7 @@ public class SingleThreadScheduler implements IActorScheduler {
 
 	@Override
 	public void close() {
-		executor.close();
+		executor.shutdown();
 	}
 
 }

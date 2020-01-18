@@ -87,6 +87,7 @@ public class ActorSystem {
                         actorsToGo[0]--;
                         if (actorsToGo[0] == 0) {
                             timer.shutdownNow();
+                            defaultScheduler.close();
                             isShutDown = true;
                             terminator.complete("shutdown");
                         }
