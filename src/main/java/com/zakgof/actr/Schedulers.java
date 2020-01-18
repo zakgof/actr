@@ -1,11 +1,22 @@
 package com.zakgof.actr;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ThreadFactory;
 
 public class Schedulers {
 
 	public static IActorScheduler newForkJoinPoolScheduler(int throughput) {
-		return new ForkJoinPoolScheduler(throughput);
+		return new ExecutorBasedScheduler(ForkJoinPool.commonPool(), throughput);
+	}
+
+	public static IActorScheduler newExecutorBasedScheduler(ExecutorService executorService, int throughput) {
+		return new ExecutorBasedScheduler(executorService, throughput);
+	}
+
+	public static IActorScheduler newFixedThreadPoolScheduler(int threads, int throughput) {
+		return new ExecutorBasedScheduler(Executors.newFixedThreadPool(threads, runnable -> new Thread(runnable, "actr:fixed")), throughput);
 	}
 
 	public static BlockingThreadScheduler newBlockingThreadScheduler() {

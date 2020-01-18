@@ -4,23 +4,22 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Scheduler based on a shared work-stealing ForkJoinPool. Best for CPU-intense
- * actrs. Disposing the scheduler is no-op since the pool is common for the
- * whole JVM.
+ * Scheduler based on a provided executor service.
  */
-public class ForkJoinPoolScheduler implements IActorScheduler {
+public class ExecutorBasedScheduler implements IActorScheduler {
 
-	private final ForkJoinPool pool;
 	private final int throughput;
-	private final Map<Object, Mailbox> delayed = new ConcurrentHashMap<>();
-	private boolean shutdown = false;
+	private final Map<Object, Mailbox> mailboxes = new ConcurrentHashMap<>();
+	private final ExecutorService executor;
 
-	public ForkJoinPoolScheduler(int throughput) {
-		this.pool = ForkJoinPool.commonPool();
+	private volatile boolean shutdown = false;
+
+	public ExecutorBasedScheduler(ExecutorService executor, int throughput) {
+		this.executor = executor;
 		this.throughput = throughput;
 	}
 
@@ -31,12 +30,12 @@ public class ForkJoinPoolScheduler implements IActorScheduler {
 
 	@Override
 	public void actorCreated(Object actorId) {
-		delayed.put(actorId, new Mailbox());
+		mailboxes.put(actorId, new Mailbox());
 	}
 
 	@Override
 	public void actorDisposed(Object actorId) {
-		delayed.remove(actorId);
+		mailboxes.remove(actorId);
 	}
 
 	@Override
@@ -47,7 +46,7 @@ public class ForkJoinPoolScheduler implements IActorScheduler {
 		}
 
 		Runnable task = () -> {
-			Mailbox mailbox = delayed.get(actorId);
+			Mailbox mailbox = mailboxes.get(actorId);
 			mailbox.queue.add(raw);
 			int before = mailbox.queued.getAndIncrement();
 			// System.err.println("Add to mailbox, was: " + before);
@@ -55,7 +54,7 @@ public class ForkJoinPoolScheduler implements IActorScheduler {
 				processMailbox(mailbox);
 			}
 		};
-		pool.execute(task);
+		executor.execute(task);
 	}
 
 	private void processMailbox(Mailbox mailbox) {
@@ -75,13 +74,14 @@ public class ForkJoinPoolScheduler implements IActorScheduler {
 		// System.err.println(" Processed " + processed);
 		if (remaining > 0) {
 			// System.err.println(" Remaining in mailbox " + remaining);
-			pool.execute(() -> processMailbox(mailbox));
+			executor.execute(() -> processMailbox(mailbox));
 		}
 	}
 
 	@Override
 	public void close() {
 		this.shutdown = true;
+		executor.shutdown();
 	}
 
 }
