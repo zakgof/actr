@@ -16,7 +16,7 @@ public class Schedulers {
 	}
 
 	public static IActorScheduler newFixedThreadPoolScheduler(int threads, int throughput) {
-		return new ExecutorBasedScheduler(Executors.newFixedThreadPool(threads), throughput);
+		return new ExecutorBasedScheduler(Executors.newFixedThreadPool(threads, runnable -> new Thread(runnable, "actr:fixed")), throughput);
 	}
 
 	public static BlockingThreadScheduler newBlockingThreadScheduler() {
