@@ -14,6 +14,7 @@ class ActorImpl<T> implements ActorRef<T> {
     private final String name;
     private final BiConsumer<T, Exception> exceptionHandler;
     private final Consumer<T> destructor;
+	private volatile Object box;
 
     ActorImpl(T object, Supplier<T> constructor, IActorScheduler scheduler, ActorSystem actorSystem, String name, BiConsumer<T, Exception> exceptionHandler, Consumer<T> destructor) {
         this.actorSystem = actorSystem;
@@ -138,5 +139,13 @@ class ActorImpl<T> implements ActorRef<T> {
     public void close() {
         dispose(() -> {});
     }
+
+	void box(Object box) {
+		this.box = box;
+	}
+
+	Object box() {
+		return box;
+	}
 
 }
