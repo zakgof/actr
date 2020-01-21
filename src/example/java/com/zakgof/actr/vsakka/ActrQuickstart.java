@@ -9,7 +9,7 @@ import com.zakgof.actr.IActorSystem;
 public class ActrQuickstart {
 
     public static void main(String[] args) {
-        final IActorSystem system = Actr.newActorSystem("helloactr");
+        final IActorSystem system = Actr.newSystem("helloactr");
         try {
             // #create-actors
             final IActorRef<Printer> printerActor = system.actorOf(Printer::new, "printerActor");

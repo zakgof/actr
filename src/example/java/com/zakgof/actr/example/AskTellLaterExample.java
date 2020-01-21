@@ -9,7 +9,7 @@ import com.zakgof.actr.IActorSystem;
 public class AskTellLaterExample {
 
     public static void main(String[] args) throws InterruptedException {
-        final IActorSystem system = Actr.newActorSystem("example");
+        final IActorSystem system = Actr.newSystem("example");
         final IActorRef<Printer> printerActor = system.actorOf(Printer::new);
         final IActorRef<Randomizer> randomizerActor = system.actorOf(Randomizer::new);
         final IActorRef<Looper> looperActor = system.actorOf(() -> new Looper(printerActor, randomizerActor));

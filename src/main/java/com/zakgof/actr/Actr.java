@@ -18,7 +18,7 @@ public class Actr {
      * @param name actor system name
      * @return newly created actor system
      */
-    public static IActorSystem newActorSystem(String name) {
+    public static IActorSystem newSystem(String name) {
         return new ActorSystemImpl(name);
     }
 
@@ -31,7 +31,7 @@ public class Actr {
      * @param defaultScheduler default scheduler for new actors
      * @return newly created actor system
      */
-    public static IActorSystem newActorSystem(String name, IActorScheduler defaultScheduler) {
+    public static IActorSystem newSystem(String name, IActorScheduler defaultScheduler) {
         return new ActorSystemImpl(name, defaultScheduler);
     }
 

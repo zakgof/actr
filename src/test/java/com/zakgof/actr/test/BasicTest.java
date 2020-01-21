@@ -30,7 +30,7 @@ import com.zakgof.actr.Schedulers;
 
 public class BasicTest {
 
-    private final IActorSystem system = Actr.newActorSystem("test", Schedulers.newThreadPerActorScheduler());
+    private final IActorSystem system = Actr.newSystem("test", Schedulers.newThreadPerActorScheduler());
 
     private final IActorRef<Master> master = system.<Master> actorBuilder()
         .constructor(Master::new)

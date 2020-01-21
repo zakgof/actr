@@ -12,7 +12,7 @@ import com.zakgof.actr.IActorSystem;
 
 public class NestedAskTest {
 
-    private final IActorSystem system = Actr.newActorSystem("nested");
+    private final IActorSystem system = Actr.newSystem("nested");
 
     private final IActorRef<Master> master = system.actorOf(Master::new);
     private final IActorRef<Runner1> runner1 = system.actorOf(Runner1::new);

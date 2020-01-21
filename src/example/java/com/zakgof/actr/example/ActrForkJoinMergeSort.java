@@ -24,7 +24,7 @@ public class ActrForkJoinMergeSort {
 
     public static void sort(int[] input) {
 
-        final IActorSystem system = Actr.newActorSystem("actrsort");
+        final IActorSystem system = Actr.newSystem("actrsort");
 
         final IActorRef<MasterActor> master = system.actorOf(MasterActor::new, "master");
         master.tell(m -> m.start(input));

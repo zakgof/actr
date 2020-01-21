@@ -12,7 +12,7 @@ import com.zakgof.actr.Schedulers;
 
 public class ShutdownTest {
 
-    private final IActorSystem system = Actr.newActorSystem("massive");
+    private final IActorSystem system = Actr.newSystem("massive");
     private final IActorRef<Runnable> shutdown = system.actorOf(() -> system::shutdown);
 
     @Test
