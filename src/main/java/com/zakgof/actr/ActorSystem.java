@@ -1,6 +1,5 @@
 package com.zakgof.actr;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Random;
@@ -23,7 +22,7 @@ public class ActorSystem {
     private final IActorScheduler defaultScheduler;
 
     private final String name;
-    private final Map<Object, ActorImpl<?>> actors = new ConcurrentHashMap<>();
+    private final IRegSet<ActorImpl<?>> actors = new FastRegSet<>();
     private final ScheduledExecutorService timer;
 
     private final CompletableFuture<String> terminator = new CompletableFuture<>();
@@ -80,22 +79,30 @@ public class ActorSystem {
     public CompletableFuture<String> shutdown() {
         if (isShuttingDown.compareAndSet(false, true)) {
             timer.execute(() -> {
-                Collection<ActorImpl<?>> actorRefs = new ArrayList<>(actors.values());
+                Collection<ActorImpl<?>> actorRefs = actors.copy();
+                if (actorRefs.isEmpty()) {
+                    internalShutdown();
+                    return;
+                }
                 int[] actorsToGo = { actorRefs.size() };
                 for (ActorImpl<?> actor : actorRefs) {
                     actor.dispose(() -> timer.execute(() -> {
                         actorsToGo[0]--;
                         if (actorsToGo[0] == 0) {
-                            timer.shutdownNow();
-                            defaultScheduler.close();
-                            isShutDown = true;
-                            terminator.complete("shutdown");
+                            internalShutdown();
                         }
                     }));
                 }
             });
         }
         return terminator;
+    }
+
+    private void internalShutdown() {
+        timer.shutdownNow();
+        defaultScheduler.close();
+        isShutDown = true;
+        terminator.complete("shutdown");
     }
 
     /**
@@ -107,11 +114,11 @@ public class ActorSystem {
 
     void add(ActorImpl<?> actorRef) {
         checkShutdown();
-        actors.put(actorRef.object(), actorRef);
+        actorRef.reg(actors.add(actorRef));
     }
 
     void remove(ActorImpl<?> actorRef) {
-        actors.remove(actorRef.object());
+        actorRef.reg().remove();
     }
 
     private void checkShutdown() {

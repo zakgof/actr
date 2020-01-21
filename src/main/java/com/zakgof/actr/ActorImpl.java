@@ -6,6 +6,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import com.zakgof.actr.IRegSet.IRegistration;
+
 class ActorImpl<T> implements ActorRef<T> {
 
     private volatile T object;
@@ -15,6 +17,7 @@ class ActorImpl<T> implements ActorRef<T> {
     private final BiConsumer<T, Exception> exceptionHandler;
     private final Consumer<T> destructor;
 	private volatile Object box;
+    private volatile IRegistration reg;
 
     ActorImpl(T object, Supplier<T> constructor, IActorScheduler scheduler, ActorSystem actorSystem, String name, BiConsumer<T, Exception> exceptionHandler, Consumer<T> destructor) {
         this.actorSystem = actorSystem;
@@ -147,5 +150,13 @@ class ActorImpl<T> implements ActorRef<T> {
 	Object box() {
 		return box;
 	}
+
+    void reg(IRegistration reg) {
+        this.reg = reg;
+    }
+
+    IRegistration reg() {
+        return reg;
+    }
 
 }
