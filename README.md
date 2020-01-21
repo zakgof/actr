@@ -15,16 +15,21 @@ Actor code is guaranteed to be executed in thread-safe context:
 
 #### Schedulers
 
-Available actor schedulers:
+Schedulers are available to be configured on per-actor or per-actor-system basis.
 
-- Shared ForkJoinPool scheduler    
+- Shared ForkJoinPool scheduler (the default)    
 All actors share the common work stealing `ForkJoinPool`. This option is best for CPU-intensive actors.
 
-- Dedicated thread scheduler    
-Each actor owns a thread and all calls to the actor execute in that dedicated thread. It is useful, in particular, when wrapping non thread safe API.   
+- Thread per actor (pinned thread) scheduler    
+Each actor owns a thread and all calls to the actor execute in that dedicated thread. It is useful, in particular, when wrapping non thread safe API.
 **NEW !** JDK's project Loom Virtual Threads (aka Fibers) are also supported.
 
-It's easy to introduce your own fine-tuned scheduler by just implementing `IActorScheduling`.
+- Fixed thread pool scheduler    
+Uses a pool of a predefined number or threads for scheduling actor calls. It might be beneficial compared to ForkJoinPools for actors involving some io when actor's CPU utilization is not maximum.
+
+- Scheduler based on a user-provided ExecutorService for a more flexible option.   
+
+It's easy to introduce your own fine-tuned scheduler by just implementing `IActorScheduler`.
 
 #### Comparison to akka
 
@@ -48,7 +53,7 @@ Actr outperforms Akka on common actor operations. A complete opensource benchmar
 
 #### Gradle
 ````groovy
-compile 'com.github.zakgof:actr:0.3.0'
+compile 'com.github.zakgof:actr:0.4.0'
 ````
 
 #### Maven
@@ -56,7 +61,7 @@ compile 'com.github.zakgof:actr:0.3.0'
 <dependency>
   <groupId>com.github.zakgof</groupId>
   <artifactId>actr</artifactId>
-  <version>0.3.0</version>
+  <version>0.4.0</version>
 </dependency>
 ````
 
@@ -80,7 +85,7 @@ private static class Printer {
 Create an actor
 
 ````java
-final ActorRef<Printer> printerActor = ActorSystem.create("default").actorOf(Printer::new);
+final IActorRef<Printer> printerActor = Actr.newActorSystem("default").actorOf(Printer::new);
 ````
 
 Call Printer from another actor

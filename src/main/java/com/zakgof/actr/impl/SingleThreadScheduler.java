@@ -1,7 +1,9 @@
-package com.zakgof.actr;
+package com.zakgof.actr.impl;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import com.zakgof.actr.IActorScheduler;
 
 /**
  * Scheduler that processed all the actors messages sequentially in a

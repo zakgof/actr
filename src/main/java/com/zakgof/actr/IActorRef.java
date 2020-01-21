@@ -10,12 +10,12 @@ import java.util.function.Function;
  *
  * @param <T> actor POJO class
  */
-public interface ActorRef<T> extends AutoCloseable {
+public interface IActorRef<T> extends AutoCloseable {
 
     /**
      * @return actor's @link {ActorSystem}
      */
-    ActorSystem system();
+    IActorSystem system();
 
     /**
      * Sends a message to the actor defined by this reference.

@@ -1,6 +1,5 @@
-package com.zakgof.actr;
+package com.zakgof.actr.impl;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Random;
@@ -16,14 +15,21 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-public class ActorSystem {
+import com.zakgof.actr.IActorBuilder;
+import com.zakgof.actr.IActorRef;
+import com.zakgof.actr.IActorScheduler;
+import com.zakgof.actr.IActorSystem;
+import com.zakgof.actr.IForkBuilder;
+import com.zakgof.actr.Schedulers;
+
+public class ActorSystemImpl implements IActorSystem {
 
     private static final int DEFAULT_FORKJOINSCHEDULER_THROUGHPUT = 10;
 
     private final IActorScheduler defaultScheduler;
 
     private final String name;
-    private final Map<Object, ActorImpl<?>> actors = new ConcurrentHashMap<>();
+    private final IRegSet<ActorImpl<?>> actors = new FastRegSet<>();
     private final ScheduledExecutorService timer;
 
     private final CompletableFuture<String> terminator = new CompletableFuture<>();
@@ -31,32 +37,7 @@ public class ActorSystem {
 
     private volatile boolean isShutDown;
 
-    /**
-     * Create a new actor system with the specified name.
-     *
-     * Default ForkJoinScheduler is used.
-     *
-     * @param name actor system name
-     * @return newly created actor system
-     */
-    public static ActorSystem create(String name) {
-        return new ActorSystem(name, Schedulers.newForkJoinPoolScheduler(DEFAULT_FORKJOINSCHEDULER_THROUGHPUT));
-    }
-
-    /**
-     * Create a new actor system with the specified name and scheduler factory.
-     *
-     * Scheduler factory will be used to create actors; actor will own the scheduler, i.e. each scheduler is disposed together with its owning actor.
-     *
-     * @param name actor system name
-     * @param defaultScheduler default scheduler for new actors
-     * @return newly created actor system
-     */
-    public static ActorSystem create(String name, IActorScheduler defaultScheduler) {
-        return new ActorSystem(name, defaultScheduler);
-    }
-
-    private ActorSystem(String name, IActorScheduler defaultScheduler) {
+    public ActorSystemImpl(String name, IActorScheduler defaultScheduler) {
         this.name = name;
         this.defaultScheduler = defaultScheduler;
         this.timer = Executors.newSingleThreadScheduledExecutor(runnable -> {
@@ -64,6 +45,10 @@ public class ActorSystem {
             thread.setPriority(8);
             return thread;
         });
+    }
+
+    public ActorSystemImpl(String name) {
+        this(name, Schedulers.newForkJoinPoolScheduler(DEFAULT_FORKJOINSCHEDULER_THROUGHPUT));
     }
 
     /**
@@ -77,19 +62,21 @@ public class ActorSystem {
      *
      * @return CompletableFuture that client may use to be notified when shutdown completes; the supplied string is shutdown reason
      */
+    @Override
     public CompletableFuture<String> shutdown() {
         if (isShuttingDown.compareAndSet(false, true)) {
             timer.execute(() -> {
-                Collection<ActorImpl<?>> actorRefs = new ArrayList<>(actors.values());
+                Collection<ActorImpl<?>> actorRefs = actors.copy();
+                if (actorRefs.isEmpty()) {
+                    internalShutdown();
+                    return;
+                }
                 int[] actorsToGo = { actorRefs.size() };
                 for (ActorImpl<?> actor : actorRefs) {
                     actor.dispose(() -> timer.execute(() -> {
                         actorsToGo[0]--;
                         if (actorsToGo[0] == 0) {
-                            timer.shutdownNow();
-                            defaultScheduler.close();
-                            isShutDown = true;
-                            terminator.complete("shutdown");
+                            internalShutdown();
                         }
                     }));
                 }
@@ -98,20 +85,28 @@ public class ActorSystem {
         return terminator;
     }
 
+    private void internalShutdown() {
+        timer.shutdownNow();
+        defaultScheduler.close();
+        isShutDown = true;
+        terminator.complete("shutdown");
+    }
+
     /**
      * @return a CompletableFuture to be triggered when actor system shutdown completes. The result value is the shutdown reason.
      */
+    @Override
     public CompletableFuture<String> shutdownCompletable() {
         return terminator;
     }
 
     void add(ActorImpl<?> actorRef) {
         checkShutdown();
-        actors.put(actorRef.object(), actorRef);
+        actorRef.reg(actors.add(actorRef));
     }
 
     void remove(ActorImpl<?> actorRef) {
-        actors.remove(actorRef.object());
+        actorRef.reg().remove();
     }
 
     private void checkShutdown() {
@@ -122,13 +117,14 @@ public class ActorSystem {
     }
 
     /**
-     * Get an instance of {@link ActorBuilder} under this system
+     * Get an instance of {@link ActorBuilderImpl} under this system
      *
      * @param <T> actor POJO class
      * @return ActorBuilder instance
      */
-    public <T> ActorBuilder<T> actorBuilder() {
-        return new ActorBuilder<T>(this);
+    @Override
+    public <T> IActorBuilder<T> actorBuilder() {
+        return new ActorBuilderImpl<T>(this);
     }
 
     /**
@@ -139,7 +135,8 @@ public class ActorSystem {
      * @param name actor name
      * @return ActorRef actor reference
      */
-    public <T> ActorRef<T> actorOf(Supplier<T> constructor, String name) {
+    @Override
+    public <T> IActorRef<T> actorOf(Supplier<T> constructor, String name) {
         return this.<T> actorBuilder().constructor(constructor).name(name).build();
     }
 
@@ -150,12 +147,13 @@ public class ActorSystem {
      * @param constructor factory to create actor POJO class instance.
      * @return ActorRef actor reference
      */
-    public <T> ActorRef<T> actorOf(Supplier<T> constructor) {
+    @Override
+    public <T> IActorRef<T> actorOf(Supplier<T> constructor) {
         return actorOf(constructor, Long.toHexString(new Random().nextLong()));
     }
 
-    public static class ActorBuilder<T> {
-        private ActorSystem actorSystem;
+    public static class ActorBuilderImpl<T> implements IActorBuilder<T> {
+        private ActorSystemImpl actorSystem;
         private T object;
         private Supplier<T> constructor;
         private Consumer<T> destructor;
@@ -163,7 +161,7 @@ public class ActorSystem {
         private String name;
         private BiConsumer<T, Exception> exceptionHandler;
 
-        private ActorBuilder(ActorSystem actorSystem) {
+        private ActorBuilderImpl(ActorSystemImpl actorSystem) {
             actorSystem.checkShutdown();
             this.actorSystem = actorSystem;
             this.scheduler = actorSystem.defaultScheduler;
@@ -176,7 +174,8 @@ public class ActorSystem {
          * @param object actor POJO class instance
          * @return this builder
          */
-        public ActorBuilder<T> object(T object) {
+        @Override
+        public IActorBuilder<T> object(T object) {
             this.object = object;
             return this;
         }
@@ -189,7 +188,8 @@ public class ActorSystem {
          * @param constructor POJO class instance factory
          * @return this builder
          */
-        public ActorBuilder<T> constructor(Supplier<T> constructor) {
+        @Override
+        public IActorBuilder<T> constructor(Supplier<T> constructor) {
             this.constructor = constructor;
             return this;
         }
@@ -200,7 +200,8 @@ public class ActorSystem {
          * @param destructor action to be called on actor destruction
          * @return this builder
          */
-        public ActorBuilder<T> destructor(Consumer<T> destructor) {
+        @Override
+        public IActorBuilder<T> destructor(Consumer<T> destructor) {
             this.destructor = destructor;
             return this;
         }
@@ -211,7 +212,8 @@ public class ActorSystem {
          * @param name actor name
          * @return this builder
          */
-        public ActorBuilder<T> name(String name) {
+        @Override
+        public IActorBuilder<T> name(String name) {
             this.name = name;
             return this;
         }
@@ -222,7 +224,8 @@ public class ActorSystem {
          * @param scheduler scheduler to be used for the actor being constructed
          * @return this builder
          */
-        public ActorBuilder<T> scheduler(IActorScheduler scheduler) {
+        @Override
+        public IActorBuilder<T> scheduler(IActorScheduler scheduler) {
             this.scheduler = scheduler;
             return this;
         }
@@ -235,7 +238,8 @@ public class ActorSystem {
          * @param exceptionHandler exception handler to be triggered
          * @return this builder
          */
-        public ActorBuilder<T> exceptionHandler(BiConsumer<T, Exception> exceptionHandler) {
+        @Override
+        public IActorBuilder<T> exceptionHandler(BiConsumer<T, Exception> exceptionHandler) {
             this.exceptionHandler = exceptionHandler;
             return this;
         }
@@ -245,13 +249,14 @@ public class ActorSystem {
          *
          * @return newly create ActorRef instance
          */
-        public ActorRef<T> build() {
+        @Override
+        public IActorRef<T> build() {
             if (constructor != null && object != null)
                 throw new IllegalArgumentException("Not allowed to provide both object and constructor");
             if (constructor == null && object == null)
                 throw new IllegalArgumentException("Provide either object or constructor");
 
-            ActorRef<T> actorRef = new ActorImpl<T>(object, constructor, scheduler, actorSystem, name, exceptionHandler, destructor);
+            IActorRef<T> actorRef = new ActorImpl<T>(object, constructor, scheduler, actorSystem, name, exceptionHandler, destructor);
             return actorRef;
         }
 
@@ -268,51 +273,57 @@ public class ActorSystem {
         return "ActorSystem " + name;
     }
 
-    public <T> void executeAsActor(T instance, Consumer<ActorRef<T>> call) {
+    public <T> void executeAsActor(T instance, Consumer<IActorRef<T>> call) {
         BlockingThreadScheduler blockingThreadScheduler = new BlockingThreadScheduler();
-        ActorRef<T> actor = this.<T>actorBuilder().object(instance).scheduler(blockingThreadScheduler).build();
+        IActorRef<T> actor = this.<T>actorBuilder().object(instance).scheduler(blockingThreadScheduler).build();
         actor.tell(obj -> call.accept(actor));
         blockingThreadScheduler.start();
     }
 
-    public <I, T> ForkBuilder<I, T> forkBuilder(Collection<I> ids) {
-        return new ForkBuilder<I, T>().ids(ids);
+    @Override
+    public <I, T> IForkBuilder<I, T> forkBuilder(Collection<I> ids) {
+        return new ForkBuilderImpl<I, T>().ids(ids);
     }
 
     public interface TernaryConsumer<A, B, C> {
         void accept(A a, B b, C c);
     }
 
-    public class ForkBuilder<I, T> {
+    private class ForkBuilderImpl<I, T> implements IForkBuilder<I, T> {
 
         private Collection<I> ids;
         private Function<I, T> constructor;
-        private Function<I, IActorScheduler> scheduler = $ -> ActorSystem.this.defaultScheduler;
+        private Function<I, IActorScheduler> scheduler = $ -> ActorSystemImpl.this.defaultScheduler;
 
-        public ForkBuilder<I, T> ids(Collection<I> ids) {
+        @Override
+        public IForkBuilder<I, T> ids(Collection<I> ids) {
             this.ids = ids;
             return this;
         }
 
-        public ForkBuilder<I, T> constructor(Function<I, T> constructor) {
+        @Override
+        public IForkBuilder<I, T> constructor(Function<I, T> constructor) {
             this.constructor = constructor;
             return this;
         }
 
-        public ForkBuilder<I, T> scheduler(Function<I, IActorScheduler> scheduler) {
+        @Override
+        public IForkBuilder<I, T> scheduler(Function<I, IActorScheduler> scheduler) {
             this.scheduler = scheduler;
             return this;
         }
 
+        @Override
         public <R> void ask(BiFunction<I, T, R> action, Consumer<Map<I, R>> result) {
             ask((id, pojo, resultConsumer) -> resultConsumer.accept(action.apply(id, pojo)), result);
         }
 
+        @Override
         public <R> void ask(TernaryConsumer<I, T, Consumer<R>> action, Consumer<Map<I, R>> result) {
 
             Map<I, R> map = new ConcurrentHashMap<>();
             for (I id : ids) {
-                ActorRef<T> actor = ActorSystem.this.<T>actorBuilder()
+                IActorRef<T> actor = ActorSystemImpl.this.<T>actorBuilder()
                     .constructor(() -> constructor.apply(id))
                     .scheduler(scheduler.apply(id))
                     .build();

@@ -1,11 +1,11 @@
-package com.zakgof.actr;
+package com.zakgof.actr.impl;
 
-import java.util.Map;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import com.zakgof.actr.IActorScheduler;
 
 /**
  * Scheduler based on a provided executor service.
@@ -13,7 +13,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ExecutorBasedScheduler implements IActorScheduler {
 
 	private final int throughput;
-	private final Map<Object, Mailbox> mailboxes = new ConcurrentHashMap<>();
 	private final ExecutorService executor;
 
 	private volatile boolean shutdown = false;
@@ -30,12 +29,12 @@ public class ExecutorBasedScheduler implements IActorScheduler {
 
 	@Override
 	public void actorCreated(Object actorId) {
-		mailboxes.put(actorId, new Mailbox());
+		((ActorImpl<?>)actorId).box(new Mailbox());
 	}
 
 	@Override
 	public void actorDisposed(Object actorId) {
-		mailboxes.remove(actorId);
+		((ActorImpl<?>)actorId).box(null);
 	}
 
 	@Override
@@ -46,7 +45,7 @@ public class ExecutorBasedScheduler implements IActorScheduler {
 		}
 
 		Runnable task = () -> {
-			Mailbox mailbox = mailboxes.get(actorId);
+			Mailbox mailbox = (Mailbox)((ActorImpl<?>)actorId).box();
 			mailbox.queue.add(raw);
 			int before = mailbox.queued.getAndIncrement();
 			// System.err.println("Add to mailbox, was: " + before);

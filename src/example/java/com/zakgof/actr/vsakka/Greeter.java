@@ -1,14 +1,14 @@
 package com.zakgof.actr.vsakka;
 
-import com.zakgof.actr.ActorRef;
+import com.zakgof.actr.IActorRef;
 
 public class Greeter {
 
 	private String message;
-	private ActorRef<Printer> printerActor;
+	private IActorRef<Printer> printerActor;
 	private String greeting;
 
-	public Greeter(String message, ActorRef<Printer> printerActor) {
+	public Greeter(String message, IActorRef<Printer> printerActor) {
 		this.message = message;
 		this.printerActor = printerActor;
 	}

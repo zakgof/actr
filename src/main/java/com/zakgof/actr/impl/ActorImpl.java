@@ -1,4 +1,4 @@
-package com.zakgof.actr;
+package com.zakgof.actr.impl;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
@@ -6,16 +6,24 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-class ActorImpl<T> implements ActorRef<T> {
+import com.zakgof.actr.Actr;
+import com.zakgof.actr.IActorRef;
+import com.zakgof.actr.IActorScheduler;
+import com.zakgof.actr.IActorSystem;
+import com.zakgof.actr.impl.IRegSet.IRegistration;
+
+class ActorImpl<T> implements IActorRef<T> {
 
     private volatile T object;
-    private final ActorSystem actorSystem;
+    private final ActorSystemImpl actorSystem;
     private final IActorScheduler scheduler;
     private final String name;
     private final BiConsumer<T, Exception> exceptionHandler;
     private final Consumer<T> destructor;
+	private volatile Object box;
+    private volatile IRegistration reg;
 
-    ActorImpl(T object, Supplier<T> constructor, IActorScheduler scheduler, ActorSystem actorSystem, String name, BiConsumer<T, Exception> exceptionHandler, Consumer<T> destructor) {
+    ActorImpl(T object, Supplier<T> constructor, IActorScheduler scheduler, ActorSystemImpl actorSystem, String name, BiConsumer<T, Exception> exceptionHandler, Consumer<T> destructor) {
         this.actorSystem = actorSystem;
         this.exceptionHandler = exceptionHandler;
         this.name = name;
@@ -33,15 +41,15 @@ class ActorImpl<T> implements ActorRef<T> {
 
     @Override
     public void tell(Consumer<T> action) {
-        ActorRef<?> caller = Actr.current();
+        IActorRef<?> caller = Actr.current();
         scheduleCall(action, caller);
     }
 
-    private void scheduleCall(Consumer<T> action, ActorRef<?> caller) {
+    private void scheduleCall(Consumer<T> action, IActorRef<?> caller) {
        scheduleCallErrorAware(action, caller, e -> exceptionHandler.accept(object, e));
     }
 
-    private void scheduleCallErrorAware(Consumer<T> action, ActorRef<?> caller, Consumer<Exception> exceptionCallback) {
+    private void scheduleCallErrorAware(Consumer<T> action, IActorRef<?> caller, Consumer<Exception> exceptionCallback) {
     	scheduler.schedule(() -> {
             Actr.setCurrent(this);
             Actr.setCaller(caller);
@@ -60,7 +68,7 @@ class ActorImpl<T> implements ActorRef<T> {
 
     @Override
     public void later(Consumer<T> action, long ms) {
-        ActorRef<?> caller = Actr.current();
+        IActorRef<?> caller = Actr.current();
         actorSystem.later(() -> {
             if (object != null) {
                 scheduleCall(action, caller);
@@ -70,7 +78,7 @@ class ActorImpl<T> implements ActorRef<T> {
 
     @Override
     public <R> void ask(BiConsumer<T, Consumer<R>> action, Consumer<R> consumer) {
-        ActorRef<?> caller = safeCaller();
+        IActorRef<?> caller = safeCaller();
         Consumer<R> completion = result -> caller.tell(c -> consumer.accept(result));
         tell(target -> action.accept(target, completion));
     }
@@ -82,7 +90,7 @@ class ActorImpl<T> implements ActorRef<T> {
 
     @Override
     public <R> CompletableFuture<R> ask(BiConsumer<T, Consumer<R>> action) {
-    	ActorRef<?> caller = safeCaller();
+    	IActorRef<?> caller = safeCaller();
     	CompletableFuture<R> future = new CompletableFuture<>();
     	Consumer<R> completion = result -> caller.tell(c -> future.complete(result));
     	Consumer<Exception> failure = exception -> caller.tell(c -> future.completeExceptionally(exception));
@@ -95,8 +103,8 @@ class ActorImpl<T> implements ActorRef<T> {
     	return ask((target, callback) -> callback.accept(action.apply(target)));
     }
 
-	private static ActorRef<?> safeCaller() {
-		ActorRef<?> caller = Actr.current();
+	private static IActorRef<?> safeCaller() {
+		IActorRef<?> caller = Actr.current();
         if (caller == null)
             throw new IllegalStateException("It is not allowed to call ask from non-actor context. There's no actor to receive the response");
 		return caller;
@@ -112,7 +120,7 @@ class ActorImpl<T> implements ActorRef<T> {
     }
 
     @Override
-    public ActorSystem system() {
+    public IActorSystem system() {
         return actorSystem;
     }
 
@@ -126,7 +134,7 @@ class ActorImpl<T> implements ActorRef<T> {
                     ex.printStackTrace(); // TODO: logging
                 }
             }
-            system().remove(this);
+            ((ActorSystemImpl)system()).remove(this);
             scheduler.actorDisposed(this);
             object = null;
             whenFinished.run();
@@ -137,6 +145,22 @@ class ActorImpl<T> implements ActorRef<T> {
     @Override
     public void close() {
         dispose(() -> {});
+    }
+
+	void box(Object box) {
+		this.box = box;
+	}
+
+	Object box() {
+		return box;
+	}
+
+    void reg(IRegistration reg) {
+        this.reg = reg;
+    }
+
+    IRegistration reg() {
+        return reg;
     }
 
 }
