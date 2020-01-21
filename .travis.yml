@@ -3,6 +3,6 @@ jdk:
   - oraclejdk9
 branches:
   only:
-   - master
+   - release
 script:
-  - ./gradlew clean javadoc test
+  - ./gradlew bintrayUpload -PbintrayKey=${BINTRAY_KEY}
