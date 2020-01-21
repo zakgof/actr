@@ -1,4 +1,4 @@
-package com.zakgof.actr;
+package com.zakgof.actr.impl;
 
 import java.util.Collection;
 

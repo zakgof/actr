@@ -5,6 +5,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ThreadFactory;
 
+import com.zakgof.actr.impl.BlockingThreadScheduler;
+import com.zakgof.actr.impl.ExecutorBasedScheduler;
+import com.zakgof.actr.impl.SingleThreadScheduler;
+import com.zakgof.actr.impl.ThreadPerActorScheduler;
+
 public class Schedulers {
 
 	public static IActorScheduler newForkJoinPoolScheduler(int throughput) {

@@ -1,8 +1,8 @@
-package com.zakgof.actr;
+package com.zakgof.actr.impl;
 
 import java.util.Collection;
 
-public interface IRegSet<T> {
+interface IRegSet<T> {
 
     interface IRegistration {
         void remove();

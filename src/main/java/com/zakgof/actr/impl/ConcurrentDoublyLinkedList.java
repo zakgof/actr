@@ -1,4 +1,4 @@
-package com.zakgof.actr;
+package com.zakgof.actr.impl;
 
 /*
  * Written by Doug Lea with assistance from members of JCP JSR-166

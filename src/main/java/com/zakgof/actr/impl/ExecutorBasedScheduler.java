@@ -1,9 +1,11 @@
-package com.zakgof.actr;
+package com.zakgof.actr.impl;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import com.zakgof.actr.IActorScheduler;
 
 /**
  * Scheduler based on a provided executor service.

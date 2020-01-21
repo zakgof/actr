@@ -1,10 +1,10 @@
-package com.zakgof.actr;
+package com.zakgof.actr.impl;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class MapRegSet<T> implements IRegSet<T> {
+class MapRegSet<T> implements IRegSet<T> {
 
     private final Map<T, T> map = new ConcurrentHashMap<>();
 
