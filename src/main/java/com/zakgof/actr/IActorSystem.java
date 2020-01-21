@@ -25,10 +25,10 @@ public interface IActorSystem {
     CompletableFuture<String> shutdownCompletable();
 
     /**
-     * Get an instance of {@link ActorBuilder} under this system
+     * Get an instance of {@link IActorBuilder} under this system.
      *
      * @param <T> actor POJO class
-     * @return ActorBuilder instance
+     * @return actor builder instance
      */
     <T> IActorBuilder<T> actorBuilder();
 
