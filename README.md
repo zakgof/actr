@@ -53,7 +53,7 @@ Actr outperforms Akka on common actor operations. A complete opensource benchmar
 
 #### Gradle
 ````groovy
-compile 'com.github.zakgof:actr:0.3.2'
+compile 'com.github.zakgof:actr:0.4.0'
 ````
 
 #### Maven
@@ -61,7 +61,7 @@ compile 'com.github.zakgof:actr:0.3.2'
 <dependency>
   <groupId>com.github.zakgof</groupId>
   <artifactId>actr</artifactId>
-  <version>0.3.2</version>
+  <version>0.4.0</version>
 </dependency>
 ````
 
@@ -85,7 +85,7 @@ private static class Printer {
 Create an actor
 
 ````java
-final ActorRef<Printer> printerActor = ActorSystem.create("default").actorOf(Printer::new);
+final IActorRef<Printer> printerActor = Actr.newActorSystem("default").actorOf(Printer::new);
 ````
 
 Call Printer from another actor
