@@ -13,6 +13,8 @@ Actor code is guaranteed to be executed in thread-safe context:
 - no concurrent calls for a particular actor (although subsequent calls may be dispatched to different threads)
 - actor state can be safely read/written from actor code without any synchronized/volatile specifiers
 
+Actr's API philosophy is discussed here: https://medium.com/@zakgof/type-safe-actor-model-for-java-7133857a9f72
+
 #### Schedulers
 
 Schedulers are available to be configured on per-actor or per-actor-system basis.
