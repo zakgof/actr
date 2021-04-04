@@ -13,42 +13,42 @@ import com.zakgof.actr.IActorScheduler;
  */
 public class ThreadPerActorScheduler implements IActorScheduler {
 
-	private Map<Object, ExecutorService> executors = new ConcurrentHashMap<>();
-	private ThreadFactory threadFactory;
+    private Map<Object, ExecutorService> executors = new ConcurrentHashMap<>();
+    private ThreadFactory threadFactory;
 
-	public ThreadPerActorScheduler() {
-		this(Thread::new);
-	}
+    public ThreadPerActorScheduler() {
+        this(Thread::new);
+    }
 
-	public ThreadPerActorScheduler(String name) {
-		this(runnable -> new Thread(runnable, "actr:" + name));
-	}
+    public ThreadPerActorScheduler(String name) {
+        this(runnable -> new Thread(runnable, "actr:" + name));
+    }
 
-	public ThreadPerActorScheduler(ThreadFactory threadFactory) {
-		this.threadFactory = threadFactory;
-	}
+    public ThreadPerActorScheduler(ThreadFactory threadFactory) {
+        this.threadFactory = threadFactory;
+    }
 
-	@Override
-	public void actorCreated(Object actorId) {
-		executors.put(actorId, Executors.newSingleThreadExecutor(threadFactory));
-	}
+    @Override
+    public void actorCreated(Object actorId) {
+        executors.put(actorId, Executors.newSingleThreadExecutor(threadFactory));
+    }
 
-	@Override
-	public void actorDisposed(Object actorId) {
-		ExecutorService service = executors.remove(actorId);
-		service.shutdown();
-	}
+    @Override
+    public void actorDisposed(Object actorId) {
+        ExecutorService service = executors.remove(actorId);
+        service.shutdown();
+    }
 
-	@Override
-	public void schedule(Runnable task, Object actorId) {
-		ExecutorService executor = executors.get(actorId);
-		if (!executor.isShutdown()) {
-			executor.execute(task);
-		}
-	}
+    @Override
+    public void schedule(Runnable task, Object actorId) {
+        ExecutorService executor = executors.get(actorId);
+        if (!executor.isShutdown()) {
+            executor.execute(task);
+        }
+    }
 
-	@Override
-	public void close() {
-		executors.values().forEach(ExecutorService::shutdown);
-	}
+    @Override
+    public void close() {
+        executors.values().forEach(ExecutorService::shutdown);
+    }
 }

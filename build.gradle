@@ -1,9 +1,10 @@
 plugins {
     id "java"
     id "maven"
+    id "signing"
     id "maven-publish"
-    id "com.jfrog.bintray" version "1.8.4"
     id 'com.adarshr.test-logger' version '1.6.0'
+    id 'biz.aQute.bnd.builder' version '5.2.0'
 }
 
 compileJava.options.encoding = 'UTF-8'
@@ -12,7 +13,7 @@ targetCompatibility = 1.8
 
 group = 'com.github.zakgof'
 archivesBaseName = 'actr'
-version = '0.4.0'
+version = '0.4.1'
 
 ext {
    descr = 'Simple Java actor model implementation'
@@ -33,6 +34,10 @@ sourceSets {
       }
    }
 }
+
+jar {
+  bnd('-exportcontents': 'com.zakgof.actr')
+}
  
 task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = 'sources'
@@ -44,72 +49,64 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
     from javadoc.destinationDir
 }
 
-artifacts {
-    archives sourcesJar
-    archives javadocJar
-}
-
-def pomConfig = {
-     scm {
-          connection 'scm:git:https://github.com/zakgof/actr.git'
-          developerConnection 'scm:git:https://github.com/zakgof/actr.git'
-          url 'https://github.com/zakgof/actr'
-        }
-
-        licenses {
-          license {
-            name 'The Apache License, Version 2.0'
-            url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-          }
-        }
-
-        developers {
-          developer {
-            id 'zakgof'
-            name 'Oleksandr Zakusylo'
-            email 'zakgof@gmail.com'
-          }
-        }
-}
-
-publishing {
-	publications {
-		MyPublication(MavenPublication) {
-			from components.java
-			artifact sourcesJar
-			artifact javadocJar
-  		    groupId group  		    
-            artifactId archivesBaseName
-            version project.version
-            pom.withXml {
-                def root = asNode()
-                root.appendNode('description', project.descr)
-                root.appendNode('name', project.archivesBaseName)
-                root.appendNode('url', 'https://github.com/zakgof/actr.git')
-                root.children().last() + pomConfig
-            }
-		}
-	}
-}
-
-bintray {
-    user = 'zakgof'
-    key = project.hasProperty('bintrayKey') ? bintrayKey : System.getenv('BINTRAY_KEY')
-    publications = ['MyPublication']
-    configurations = ['archives']
-    override = true
-    pkg {
-        repo = 'maven'
-        name = archivesBaseName
-        userOrg = 'zakgof'
-        licenses = ['Apache-2.0']
-        vcsUrl = 'https://github.com/zakgof/actr.git'
-        version {
-            name = project.version
-        }
-    }
+task testJar(type: Jar) {
+    classifier = 'tests'
+    from sourceSets.test.output
 }
 
 test {
     useJUnitPlatform()
+}
+
+artifacts {
+    archives javadocJar, sourcesJar, testJar
+}
+
+signing {
+    sign configurations.archives
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
+
+            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
+
+            pom.project {
+                packaging 'jar'
+                artifactId 'actr'
+                url 'https://github.com/zakgof/actr'
+        
+                name 'actr'
+                description 'Simple Java actor model implementation'
+
+                scm {
+                    connection 'scm:git:https://github.com/zakgof/actr.git'
+                    developerConnection 'scm:git:https://github.com/zakgof/actr.git'
+                    url 'https://github.com/zakgof/actr/tree/master/actr'
+                }
+
+                licenses {
+                    license {
+                        name 'The Apache License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id 'zakgof'
+                        name 'Oleksandr Zakusylo'
+                        email 'zakgof@gmail.com'
+                    }
+                }
+            }
+        }
+    }
 }
