@@ -1,6 +1,6 @@
 ## actr
 ![Travis CI](https://travis-ci.org/zakgof/actr.svg?branch=release)
-![https://mvnrepository.com/artifact/com.github.zakgof/actr](https://api.bintray.com/packages/zakgof/maven/actr/images/download.svg)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.zakgof/actr/badge.svg)](https://mvnrepository.com/artifact/com.github.zakgof/actr)
 
 Simple actor model implementation for Java
 
