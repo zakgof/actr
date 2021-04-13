@@ -1,8 +1,9 @@
 language: java
-jdk:
-  - oraclejdk9
-branches:
-  only:
-   - master
+install: skip
+
+os: linux
+dist: trusty
+jdk: openjdk11
+
 script:
-  - ./gradlew clean javadoc test
+  - ./gradlew test
