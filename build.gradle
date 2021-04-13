@@ -5,6 +5,7 @@ plugins {
     id "maven-publish"
     id 'com.adarshr.test-logger' version '1.6.0'
     id 'biz.aQute.bnd.builder' version '5.2.0'
+    id 'org.sonarqube' version '3.1.1'
 }
 
 compileJava.options.encoding = 'UTF-8'
@@ -107,6 +108,14 @@ uploadArchives {
                     }
                 }
             }
+        }
+    }
+    
+    sonarqube {
+        properties {
+            property "sonar.projectKey", "zakgof_actr"
+            property "sonar.organization", "zakgof"
+            property "sonar.host.url", "https://sonarcloud.io"
         }
     }
 }
