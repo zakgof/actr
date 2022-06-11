@@ -1,11 +1,10 @@
 plugins {
     id "java"
-    id "maven"
-    id "signing"
     id "maven-publish"
-    id 'com.adarshr.test-logger' version '1.6.0'
-    id 'biz.aQute.bnd.builder' version '5.2.0'
-    id 'org.sonarqube' version '3.1.1'
+    id "signing"
+    id 'com.adarshr.test-logger' version '3.2.0'
+    id 'biz.aQute.bnd.builder' version '6.3.1'
+    id 'org.sonarqube' version '3.4.0.2513'
 }
 
 def ossrhUser = hasProperty('ossrhUsername') ? ossrhUsername : System.getenv('ossrhUsername')
@@ -28,7 +27,7 @@ repositories {
 }
 
 dependencies {
-	testImplementation 'org.junit.jupiter:junit-jupiter:5.6.0-RC1'
+	testImplementation 'org.junit.jupiter:junit-jupiter:5.8.2'
 }
 
 sourceSets {
@@ -42,20 +41,10 @@ sourceSets {
 jar {
   bnd('-exportcontents': 'com.zakgof.actr')
 }
- 
-task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
-    from sourceSets.main.java
-}
 
-task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
-    from javadoc.destinationDir
-}
-
-task testJar(type: Jar) {
-    classifier = 'tests'
-    from sourceSets.test.output
+java {
+    withJavadocJar()
+    withSourcesJar()
 }
 
 test {
@@ -63,62 +52,64 @@ test {
 }
 
 artifacts {
-    archives javadocJar, sourcesJar, testJar
+    archives javadocJar, sourcesJar
 }
 
-signing {
-    sign configurations.archives
-}
-
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
-            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-                authentication(userName: ossrhUser, password: ossrhPass)
-            }
-
-            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
-                authentication(userName: ossrhUser, password: ossrhPass)
-            }
-
-            pom.project {
-                packaging 'jar'
-                artifactId 'actr'
-                url 'https://github.com/zakgof/actr'
-        
-                name 'actr'
-                description 'Simple Java actor model implementation'
+publishing {
+    publications {
+        mavenJava(MavenPublication){
+            artifactId = archivesBaseName
+            groupId = group
+            version = version
+            from(components["java"])
+            pom {
+                name = 'actr'
+                description = 'Simple Java actor model implementation'
+                url = 'https://github.com/zakgof/actr'
 
                 scm {
-                    connection 'scm:git:https://github.com/zakgof/actr.git'
-                    developerConnection 'scm:git:https://github.com/zakgof/actr.git'
-                    url 'https://github.com/zakgof/actr/tree/master/actr'
+                    connection = 'scm:git:https://github.com/zakgof/actr.git'
+                    developerConnection = 'scm:git:https://github.com/zakgof/actr.git'
+                    url = 'https://github.com/zakgof/actr/tree/master/actr'
                 }
 
                 licenses {
                     license {
-                        name 'The Apache License, Version 2.0'
-                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
                     }
                 }
 
                 developers {
                     developer {
-                        id 'zakgof'
-                        name 'Oleksandr Zakusylo'
-                        email 'zakgof@gmail.com'
+                        id = 'zakgof'
+                        name = 'Oleksandr Zakusylo'
+                        email = 'zakgof@gmail.com'
                     }
                 }
             }
         }
     }
-    
-    sonarqube {
-        properties {
-            property "sonar.projectKey", "zakgof_actr"
-            property "sonar.organization", "zakgof"
-            property "sonar.host.url", "https://sonarcloud.io"
+    repositories {
+        maven {
+            url = 'https://oss.sonatype.org/content/repositories/snapshots'
+            credentials {
+                username = ossrhUser
+                password = ossrhPass
+            }
         }
+        mavenLocal()
+    }
+}
+
+signing {
+    sign publishing.publications.mavenJava
+}
+
+sonarqube {
+    properties {
+        property "sonar.projectKey", "zakgof_actr"
+        property "sonar.organization", "zakgof"
+        property "sonar.host.url", "https://sonarcloud.io"
     }
 }
