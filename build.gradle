@@ -109,10 +109,11 @@ signing {
 
 test {
     finalizedBy jacocoTestReport
-    testLogging {
-        outputs.upToDateWhen { false }
-        showStandardStreams = true
-        exceptionFormat = 'full'
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled true
     }
 }
 
@@ -121,6 +122,8 @@ sonarqube {
         property "sonar.projectKey", "zakgof_actr"
         property "sonar.organization", "zakgof"
         property "sonar.host.url", "https://sonarcloud.io"
-        property "sonar.login", sonarlogin
+        property "sonar.login", project.hasProperty('sonarlogin') ? sonarlogin : null
     }
 }
+
+tasks['sonarqube'].dependsOn test
