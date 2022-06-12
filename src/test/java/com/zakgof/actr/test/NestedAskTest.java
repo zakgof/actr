@@ -10,7 +10,7 @@ import com.zakgof.actr.Actr;
 import com.zakgof.actr.IActorRef;
 import com.zakgof.actr.IActorSystem;
 
-public class NestedAskTest {
+class NestedAskTest {
 
     private final IActorSystem system = Actr.newSystem("nested");
 
@@ -21,15 +21,15 @@ public class NestedAskTest {
     private final IActorRef<FourtySeven> fourtySeven = system.actorOf(FourtySeven::new);
 
     @Test
-    public void testNestedAsk() {
-        master.tell(r -> r.run());
+    void testNestedAsk() {
+        master.tell(Master::run);
         system.shutdownCompletable().join();
     }
 
     private class Master {
 
-        public void run() {
-            runner1.ask((r, c) -> r.run(c), this::recv);
+        void run() {
+            runner1.ask(Runner1::run, this::recv);
         }
 
         private void recv(int result) {
@@ -41,10 +41,10 @@ public class NestedAskTest {
     }
 
     private class Runner1 {
-        public void run(Consumer<Integer> callback) {
+        void run(Consumer<Integer> callback) {
             assertEquals(runner1, Actr.current());
             assertEquals(master, Actr.caller());
-            runner2.ask((r, c) -> r.run(c), (Integer i) -> {
+            runner2.ask(Runner2::run, i -> {
                 assertEquals(runner1, Actr.current());
                 assertEquals(runner2, Actr.caller());
                 callback.accept(i);
@@ -53,7 +53,7 @@ public class NestedAskTest {
     }
 
     private class Runner2 {
-        public void run(Consumer<Integer> callback) {
+        void run(Consumer<Integer> callback) {
             assertEquals(runner2, Actr.current());
             assertEquals(runner1, Actr.caller());
             fourtySeven.ask((r, c) -> c.accept(r.run()), (Integer i) -> {
@@ -65,7 +65,7 @@ public class NestedAskTest {
     }
 
     private class FourtySeven {
-        public int run() {
+        int run() {
             assertEquals(fourtySeven, Actr.current());
             assertEquals(runner2, Actr.caller());
             return 47;

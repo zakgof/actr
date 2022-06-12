@@ -15,6 +15,9 @@ import com.zakgof.actr.impl.ThreadPerActorScheduler;
  */
 public class Schedulers {
 
+    private Schedulers() {
+    }
+
     /**
      * Creates a scheduler based on the shared ForkJoinPool.
      * @param throughput maximum number of pending actor messages to be processed at once

@@ -122,7 +122,9 @@ class ActorImpl<T> implements IActorRef<T> {
 
     @Override
     public String toString() {
-        return "[Actor: " + (name == null ? (object == null ? "<disposed>" : object.getClass().getSimpleName()) : name) + "]";
+        String objectClass = object == null ? "<disposed>" : object.getClass().getSimpleName();
+        String visibleName = name == null ? objectClass : name;
+        return "[" + actorSystem.toString() + " / Actor " + visibleName + "]";
     }
 
     @Override

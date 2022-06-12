@@ -124,7 +124,7 @@ public class ActorSystemImpl implements IActorSystem {
      */
     @Override
     public <T> IActorBuilder<T> actorBuilder() {
-        return new ActorBuilderImpl<T>(this);
+        return new ActorBuilderImpl<>(this);
     }
 
     /**
@@ -256,8 +256,7 @@ public class ActorSystemImpl implements IActorSystem {
             if (constructor == null && object == null)
                 throw new IllegalArgumentException("Provide either object or constructor");
 
-            IActorRef<T> actorRef = new ActorImpl<T>(object, constructor, scheduler, actorSystem, name, exceptionHandler, destructor);
-            return actorRef;
+            return new ActorImpl<>(object, constructor, scheduler, actorSystem, name, exceptionHandler, destructor);
         }
 
     }
@@ -273,13 +272,6 @@ public class ActorSystemImpl implements IActorSystem {
         return "ActorSystem " + name;
     }
 
-    public <T> void executeAsActor(T instance, Consumer<IActorRef<T>> call) {
-        BlockingThreadScheduler blockingThreadScheduler = new BlockingThreadScheduler();
-        IActorRef<T> actor = this.<T>actorBuilder().object(instance).scheduler(blockingThreadScheduler).build();
-        actor.tell(obj -> call.accept(actor));
-        blockingThreadScheduler.start();
-    }
-
     @Override
     public <I, T> IForkBuilder<I, T> forkBuilder(Collection<I> ids) {
         return new ForkBuilderImpl<I, T>().ids(ids);
@@ -293,7 +285,7 @@ public class ActorSystemImpl implements IActorSystem {
 
         private Collection<I> ids;
         private Function<I, T> constructor;
-        private Function<I, IActorScheduler> scheduler = $ -> ActorSystemImpl.this.defaultScheduler;
+        private Function<I, IActorScheduler> scheduler = i -> ActorSystemImpl.this.defaultScheduler;
 
         @Override
         public IForkBuilder<I, T> ids(Collection<I> ids) {

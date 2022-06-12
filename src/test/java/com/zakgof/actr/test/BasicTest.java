@@ -19,7 +19,7 @@ import com.zakgof.actr.IActorRef;
 import com.zakgof.actr.IActorSystem;
 import com.zakgof.actr.Schedulers;
 
-public class BasicTest {
+class BasicTest {
 
     private final IActorSystem system = Actr.newSystem("test", Schedulers.newThreadPerActorScheduler());
 
@@ -29,7 +29,7 @@ public class BasicTest {
     private IActorRef<TestActor> testActor;
 
     @BeforeEach
-    public void before() {
+    void before() {
         CheckPoints.clean();
 
         testActor = system.<TestActor>actorBuilder()
@@ -40,14 +40,14 @@ public class BasicTest {
     }
 
     @Test
-    public void tell() {
+    void tell() {
         testActor.tell(TestActor::simple);
         system.shutdownCompletable().join();
         validate(ActorConstructor, ActorCallSimple, ActorDestructor);
     }
 
     @Test
-    public void ask() {
+    void ask() {
         assertNull(Actr.caller());
         assertNull(Actr.current());
         master.tell(Master::ask47);
@@ -56,7 +56,7 @@ public class BasicTest {
     }
 
     @Test
-    public void askFuture() {
+    void askFuture() {
         assertNull(Actr.caller());
         assertNull(Actr.current());
         master.tell(Master::askFuture);
@@ -92,21 +92,21 @@ public class BasicTest {
     }
 
     @Test
-    public void tellError() {
+    void tellError() {
         master.tell(Master::tellError);
         system.shutdownCompletable().join();
         validate(ActorConstructor, ActorCallThrowing, ExceptionHandler, ActorDestructor);
     }
 
     @Test
-    public void askError() {
+    void askError() {
         master.tell(Master::askError);
         system.shutdownCompletable().join();
         validate(ActorConstructor, ActorCallThrowing, ExceptionHandler, ActorDestructor);
     }
 
     @Test
-    public void askErrorFuture() {
+    void askErrorFuture() {
         master.tell(Master::askErrorFuture);
         system.shutdownCompletable().join();
         validate(ActorConstructor, ActorCallThrowing, FutureFailed, ActorDestructor);
@@ -114,7 +114,7 @@ public class BasicTest {
 
     private class Master {
 
-        public void ask47() {
+        void ask47() {
             assertNull(Actr.caller());
             assertEquals(master, Actr.current());
             testActor.ask(TestActor::returning, this::validateResult);
@@ -122,7 +122,7 @@ public class BasicTest {
             assertEquals(master, Actr.current());
         }
 
-        public void askFuture() {
+        void askFuture() {
             CompletableFuture<Integer> future = testActor.ask(TestActor::returning);
             assertNull(Actr.caller());
             assertEquals(master, Actr.current());
@@ -137,7 +137,7 @@ public class BasicTest {
             });
         }
 
-        public void askErrorFuture() {
+        void askErrorFuture() {
             CompletableFuture<Integer> future = testActor.ask(TestActor::throwing);
             assertNull(Actr.caller());
             assertEquals(master, Actr.current());
@@ -151,13 +151,13 @@ public class BasicTest {
             });
         }
 
-        public void askError() {
+        void askError() {
             testActor.ask(TestActor::throwing, value -> fail());
             assertNull(Actr.caller());
             assertEquals(master, Actr.current());
         }
 
-        public void tellError() {
+        void tellError() {
             testActor.tell(TestActor::throwing);
             assertNull(Actr.caller());
             assertEquals(master, Actr.current());
@@ -223,15 +223,15 @@ public class BasicTest {
 
         private static List<CheckPoints> checkpoints = new ArrayList<>();
 
-        public static void clean() {
+        static void clean() {
             checkpoints.clear();
         }
 
-        public void check() {
+        void check() {
             checkpoints.add(this);
         }
 
-        public static void validate(CheckPoints... reference) {
+        static void validate(CheckPoints... reference) {
             assertEquals(Arrays.asList(reference), checkpoints);
         }
     }

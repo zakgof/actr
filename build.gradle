@@ -11,12 +11,12 @@ def ossrhUser = hasProperty('ossrhUsername') ? ossrhUsername : System.getenv('os
 def ossrhPass = hasProperty('ossrhPassword') ? ossrhPassword : System.getenv('ossrhPassword')
 
 compileJava.options.encoding = 'UTF-8'
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+sourceCompatibility = 11
+targetCompatibility = 11
 
 group = 'com.github.zakgof'
 archivesBaseName = 'actr'
-version = '0.4.2-SNAPHOT'
+version = '0.4.2-SNAPSHOT'
 
 ext {
    descr = 'Simple Java actor model implementation'

@@ -15,14 +15,6 @@ public class BlockingThreadScheduler implements IActorScheduler {
     private Thread thread;
 
     @Override
-    public void actorCreated(Object actorId) {
-    }
-
-    @Override
-    public void actorDisposed(Object actorId) {
-    }
-
-    @Override
     public void schedule(Runnable task, Object actorId) {
         queue.add(task);
     }
@@ -33,7 +25,7 @@ public class BlockingThreadScheduler implements IActorScheduler {
     }
 
     /**
-     * Starts message processing loop in the current thread. This method does not return until the scheduler is disposed by calling {@link #close()}. If {@link #schedule(Runnable, Object)} is called before {@link #start()}, the message will be kept
+     * Starts message processing loop in the current thread. This method does not return until the scheduler is disposed by calling {@link #close()}. If {@link #schedule(Runnable, Object)} is called before start(), the message will be kept
      * in the queue.
      */
     public void start() {
@@ -44,6 +36,7 @@ public class BlockingThreadScheduler implements IActorScheduler {
                 job.run();
             }
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
