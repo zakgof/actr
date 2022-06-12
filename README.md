@@ -64,7 +64,7 @@ implementation 'com.github.zakgof:actr:0.4.2'
 <dependency>
   <groupId>com.github.zakgof</groupId>
   <artifactId>actr</artifactId>
-  <version>0.4.1</version>
+  <version>0.4.2/version>
 </dependency>
 ````
 
