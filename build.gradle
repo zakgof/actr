@@ -17,7 +17,7 @@ targetCompatibility = 11
 
 group = 'com.github.zakgof'
 archivesBaseName = 'actr'
-version = '0.4.2-SNAPSHOT'
+version = '0.4.3-SNAPSHOT'
 
 ext {
    descr = 'Simple Java actor model implementation'

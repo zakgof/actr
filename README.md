@@ -56,7 +56,7 @@ Actr is on Maven Central
 
 #### Gradle
 ````groovy
-implementation 'com.github.zakgof:actr:0.4.1'
+implementation 'com.github.zakgof:actr:0.4.2'
 ````
 
 #### Maven
