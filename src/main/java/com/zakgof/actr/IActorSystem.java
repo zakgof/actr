@@ -13,7 +13,7 @@ public interface IActorSystem {
      *
      * Creating new actors under this system will fail after initiating the shutdown.
      *
-     * Clients may use {@link shutdownCompletable} to be notified when the shutdown procedure completes.
+     * Clients may use {@link #shutdownCompletable()} to be notified when the shutdown procedure completes.
      *
      * @return CompletableFuture that client may use to be notified when shutdown completes; the supplied string is shutdown reason
      */
@@ -53,4 +53,5 @@ public interface IActorSystem {
 
     <I, T> IForkBuilder<I, T> forkBuilder(Collection<I> ids);
 
+    String name();
 }

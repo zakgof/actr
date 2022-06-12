@@ -124,7 +124,7 @@ class ActorImpl<T> implements IActorRef<T> {
     public String toString() {
         String objectClass = object == null ? "<disposed>" : object.getClass().getSimpleName();
         String visibleName = name == null ? objectClass : name;
-        return "[" + actorSystem.toString() + " / Actor " + visibleName + "]";
+        return "[" + actorSystem.name() + ":" + visibleName + "]";
     }
 
     @Override

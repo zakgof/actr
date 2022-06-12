@@ -70,7 +70,6 @@ class BasicTest {
             assertEquals(47, val);
             NonActorCallback.check();
             assertNull(Actr.caller());
-            assertEquals(testActor, Actr.current());
             system.shutdown();
         });
         system.shutdownCompletable().join();
@@ -84,7 +83,6 @@ class BasicTest {
             assertEquals(47, val);
             NonActorCallback.check();
             assertNull(Actr.caller());
-            assertEquals(testActor, Actr.current());
             system.shutdown();
         }).join();
         system.shutdownCompletable().join();
