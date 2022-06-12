@@ -93,7 +93,7 @@ publishing {
     }
     repositories {
         maven {
-            url = 'https://oss.sonatype.org/content/repositories/snapshots'
+            url = 'https://oss.sonatype.org/service/local/staging/deploy/maven2'
             credentials {
                 username = ossrhUser
                 password = ossrhPass
