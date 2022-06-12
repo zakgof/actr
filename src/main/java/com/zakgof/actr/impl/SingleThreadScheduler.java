@@ -18,14 +18,6 @@ public class SingleThreadScheduler implements IActorScheduler {
 	}
 
 	@Override
-	public void actorCreated(Object actorId) {
-	}
-
-	@Override
-	public void actorDisposed(Object actorId) {
-	}
-
-	@Override
 	public void schedule(Runnable task, Object actorId) {
 		if (!executor.isShutdown() && !executor.isTerminated()) {
 			executor.submit(task);

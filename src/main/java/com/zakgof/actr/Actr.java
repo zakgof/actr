@@ -10,6 +10,9 @@ public class Actr {
     private static ThreadLocal<IActorRef<?>> currentActor = new ThreadLocal<>();
     private static ThreadLocal<IActorRef<?>> callerActor = new ThreadLocal<>();
 
+    private Actr() {
+    }
+
     /**
      * Create a new actor system with the specified name.
      *
@@ -79,12 +82,20 @@ public class Actr {
 
     /* Not a part of public API */
     public static void setCurrent(IActorRef<?> actor) {
-        currentActor.set(actor);
+        if (actor == null) {
+            currentActor.remove();
+        } else {
+            currentActor.set(actor);
+        }
     }
 
     /* Not a part of public API */
     public static void setCaller(IActorRef<?> actor) {
-        callerActor.set(actor);
+        if (actor == null) {
+            callerActor.remove();
+        } else {
+            callerActor.set(actor);
+        }
     }
 
 }

@@ -13,8 +13,8 @@ import com.zakgof.actr.IActorScheduler;
  */
 public class ThreadPerActorScheduler implements IActorScheduler {
 
-    private Map<Object, ExecutorService> executors = new ConcurrentHashMap<>();
-    private ThreadFactory threadFactory;
+    private final Map<Object, ExecutorService> executors = new ConcurrentHashMap<>();
+    private final ThreadFactory threadFactory;
 
     public ThreadPerActorScheduler() {
         this(Thread::new);

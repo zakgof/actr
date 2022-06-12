@@ -48,7 +48,6 @@ public class ExecutorBasedScheduler implements IActorScheduler {
             Mailbox mailbox = (Mailbox) ((ActorImpl<?>) actorId).box();
             mailbox.queue.add(raw);
             int before = mailbox.queued.getAndIncrement();
-            // System.err.println("Add to mailbox, was: " + before);
             if (before == 0) {
                 processMailbox(mailbox);
             }
@@ -57,8 +56,6 @@ public class ExecutorBasedScheduler implements IActorScheduler {
     }
 
     private void processMailbox(Mailbox mailbox) {
-        // System.err.println("processMailbox with " + mailbox.queued.get() + "/" +
-        // mailbox.queue.size() + " " + Thread.currentThread().getName());
         int processed = 0;
         for (;;) {
             Runnable runnable = mailbox.queue.poll();
@@ -70,9 +67,7 @@ public class ExecutorBasedScheduler implements IActorScheduler {
                 break;
         }
         int remaining = mailbox.queued.addAndGet(-processed);
-        // System.err.println(" Processed " + processed);
         if (remaining > 0) {
-            // System.err.println(" Remaining in mailbox " + remaining);
             executor.execute(() -> processMailbox(mailbox));
         }
     }

@@ -1,6 +1,6 @@
 ## actr
 ![Travis CI](https://travis-ci.org/zakgof/actr.svg?branch=release)
-![https://bintray.com/zakgof/maven/actr](https://api.bintray.com/packages/zakgof/maven/actr/images/download.svg)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.github.zakgof/actr/badge.svg)](https://mvnrepository.com/artifact/com.github.zakgof/actr)
 
 Simple actor model implementation for Java
 
@@ -52,10 +52,11 @@ Compare the same example implemented with
 Actr outperforms Akka on common actor operations. A complete opensource benchmark is available here: https://github.com/zakgof/akka-actr-benchmark
 
 ### Setup
+Actr is on Maven Central
 
 #### Gradle
 ````groovy
-compile 'com.github.zakgof:actr:0.4.0'
+implementation 'com.github.zakgof:actr:0.4.1'
 ````
 
 #### Maven
@@ -63,7 +64,7 @@ compile 'com.github.zakgof:actr:0.4.0'
 <dependency>
   <groupId>com.github.zakgof</groupId>
   <artifactId>actr</artifactId>
-  <version>0.4.0</version>
+  <version>0.4.1</version>
 </dependency>
 ````
 

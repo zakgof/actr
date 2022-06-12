@@ -20,7 +20,7 @@ class ActorImpl<T> implements IActorRef<T> {
     private final String name;
     private final BiConsumer<T, Exception> exceptionHandler;
     private final Consumer<T> destructor;
-	private volatile Object box;
+    private volatile Object box;
     private volatile IRegistration reg;
 
     ActorImpl(T object, Supplier<T> constructor, IActorScheduler scheduler, ActorSystemImpl actorSystem, String name, BiConsumer<T, Exception> exceptionHandler, Consumer<T> destructor) {
@@ -46,11 +46,11 @@ class ActorImpl<T> implements IActorRef<T> {
     }
 
     private void scheduleCall(Consumer<T> action, IActorRef<?> caller) {
-       scheduleCallErrorAware(action, caller, e -> exceptionHandler.accept(object, e));
+        scheduleCallErrorAware(action, caller, e -> exceptionHandler.accept(object, e));
     }
 
     private void scheduleCallErrorAware(Consumer<T> action, IActorRef<?> caller, Consumer<Exception> exceptionCallback) {
-    	scheduler.schedule(() -> {
+        scheduler.schedule(() -> {
             Actr.setCurrent(this);
             Actr.setCaller(caller);
             try {
@@ -78,8 +78,10 @@ class ActorImpl<T> implements IActorRef<T> {
 
     @Override
     public <R> void ask(BiConsumer<T, Consumer<R>> action, Consumer<R> consumer) {
-        IActorRef<?> caller = safeCaller();
-        Consumer<R> completion = result -> caller.tell(c -> consumer.accept(result));
+        IActorRef<?> current = Actr.current();
+        Consumer<R> completion = current == null
+                ? consumer
+                : result -> current.tell(c -> consumer.accept(result));
         tell(target -> action.accept(target, completion));
     }
 
@@ -90,25 +92,29 @@ class ActorImpl<T> implements IActorRef<T> {
 
     @Override
     public <R> CompletableFuture<R> ask(BiConsumer<T, Consumer<R>> action) {
-    	IActorRef<?> caller = safeCaller();
-    	CompletableFuture<R> future = new CompletableFuture<>();
-    	Consumer<R> completion = result -> caller.tell(c -> future.complete(result));
-    	Consumer<Exception> failure = exception -> caller.tell(c -> future.completeExceptionally(exception));
-    	scheduleCallErrorAware(target -> action.accept(target, completion), caller, failure);
-    	return future;
+        IActorRef<?> current = Actr.current();
+        CompletableFuture<R> future = new CompletableFuture<>();
+        Consumer<R> completion = current == null
+                ? future::complete
+                : result -> current.tell(c -> future.complete(result));
+        Consumer<Exception> failure = current == null
+                ? future::completeExceptionally
+                : exception -> current.tell(c -> future.completeExceptionally(exception));
+        scheduleCallErrorAware(target -> action.accept(target, completion), current, failure);
+        return future;
     }
 
     @Override
     public <R> CompletableFuture<R> ask(Function<T, R> action) {
-    	return ask((target, callback) -> callback.accept(action.apply(target)));
+        return ask((target, callback) -> callback.accept(action.apply(target)));
     }
 
-	private static IActorRef<?> safeCaller() {
-		IActorRef<?> caller = Actr.current();
+    private static IActorRef<?> safeCurrent() {
+        IActorRef<?> caller = Actr.current();
         if (caller == null)
             throw new IllegalStateException("It is not allowed to call ask from non-actor context. There's no actor to receive the response");
-		return caller;
-	}
+        return caller;
+    }
 
     T object() {
         return object;
@@ -116,7 +122,9 @@ class ActorImpl<T> implements IActorRef<T> {
 
     @Override
     public String toString() {
-        return "[Actor: " + (name == null ? (object == null ? "<disposed>" : object.getClass().getSimpleName()) : name) + "]";
+        String objectClass = object == null ? "<disposed>" : object.getClass().getSimpleName();
+        String visibleName = name == null ? objectClass : name;
+        return "[" + actorSystem.name() + ":" + visibleName + "]";
     }
 
     @Override
@@ -124,7 +132,9 @@ class ActorImpl<T> implements IActorRef<T> {
         return actorSystem;
     }
 
-    /** Called internally from system */
+    /**
+     * Called internally from system
+     */
     void dispose(Runnable whenFinished) {
         tell(o -> {
             if (destructor != null) {
@@ -134,7 +144,7 @@ class ActorImpl<T> implements IActorRef<T> {
                     ex.printStackTrace(); // TODO: logging
                 }
             }
-            ((ActorSystemImpl)system()).remove(this);
+            ((ActorSystemImpl) system()).remove(this);
             scheduler.actorDisposed(this);
             object = null;
             whenFinished.run();
@@ -144,16 +154,17 @@ class ActorImpl<T> implements IActorRef<T> {
 
     @Override
     public void close() {
-        dispose(() -> {});
+        dispose(() -> {
+        });
     }
 
-	void box(Object box) {
-		this.box = box;
-	}
+    void box(Object box) {
+        this.box = box;
+    }
 
-	Object box() {
-		return box;
-	}
+    Object box() {
+        return box;
+    }
 
     void reg(IRegistration reg) {
         this.reg = reg;

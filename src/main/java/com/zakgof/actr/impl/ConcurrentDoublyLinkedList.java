@@ -14,6 +14,7 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.IntFunction;
 
 /**
  * A concurrent linked-list implementation of a {@link Deque} (double-ended queue). Concurrent insertion, removal, and access operations execute safely across multiple threads. Iterators are <i>weakly consistent</i>, returning elements reflecting the
@@ -37,6 +38,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 class ConcurrentDoublyLinkedList<E> extends AbstractCollection<E>
         implements java.io.Serializable {
+    @Override
+    public <T> T[] toArray(IntFunction<T[]> generator) {
+        return super.toArray(generator);
+    }
 
     /*
      * This is an adaptation of an algorithm described in Paul Martin's "A Practical Lock-Free Doubly-Linked List". Sun Labs Tech report. The basic idea is to primarily rely on next-pointers to ensure consistency. Prev-pointers are in part
@@ -83,7 +88,7 @@ class ConcurrentDoublyLinkedList<E> extends AbstractCollection<E>
      * @return the arrayList
      */
     private ArrayList<E> toArrayList() {
-        ArrayList<E> c = new ArrayList<E>();
+        ArrayList<E> c = new ArrayList<>();
         for (Node<E> n = header.forward(); n != null; n = n.forward())
             c.add(n.element);
         return c;
@@ -553,7 +558,7 @@ class Node<E> extends AtomicReference<Node<E>> {
             Node<E> f = getNext();
             if (f == null || f.isMarker())
                 return null;
-            Node<E> x = new Node<E>(element, f, this);
+            Node<E> x = new Node<>(element, f, this);
             if (casNext(f, x)) {
                 f.setPrev(x); // optimistically link
                 return x;
@@ -572,7 +577,7 @@ class Node<E> extends AtomicReference<Node<E>> {
             Node<E> b = predecessor();
             if (b == null)
                 return null;
-            Node<E> x = new Node<E>(element, this, b);
+            Node<E> x = new Node<>(element, this, b);
             if (b.casNext(this, x)) {
                 setPrev(x); // optimistically link
                 return x;
@@ -610,7 +615,7 @@ class Node<E> extends AtomicReference<Node<E>> {
             Node<E> f = getNext();
             if (b == null || f == null || f.isMarker())
                 return null;
-            Node<E> x = new Node<E>(newElement, f, b);
+            Node<E> x = new Node<>(newElement, f, b);
             if (casNext(f, new Node<>(x))) {
                 b.successor(); // to relink b
                 x.successor(); // to relink f

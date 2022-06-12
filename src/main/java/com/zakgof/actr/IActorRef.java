@@ -54,7 +54,7 @@ public interface IActorRef<T> extends AutoCloseable {
      * Sends a message to actor and gets a response.
      *
      * Performs the specified call on the actor's object asynchronously. The call is executed in this actor's thread context. The action get a response consumer as an additional parameter, it should pass the result to that consumer. The response in
-     * passed to the caller's consumer in the caller's actor thread context. If the method is called not from actor's context, exception is thrown.
+     * passed to the caller's consumer in the caller's actor thread context. If the method is called not from any actor's context, consumer is executed in target actor's thread context.
      *
      * This method does not wait for response, it returns immediately.
      *
@@ -67,8 +67,9 @@ public interface IActorRef<T> extends AutoCloseable {
     /**
      * Sends a message to actor and returns a CompletableFuture to be completed with the response value.
      *
-     * Performs the specified call on the actor's object asynchronously. The call is executed in this actor's thread context, the future is then completed with the result value in the caller's actor thread context. If the method is
-     * called not from actor's context, exception is thrown.
+     * Performs the specified call on the actor's object asynchronously. The call is executed in this actor's thread context, the future is then completed with the result value.
+     *
+     * It is allowed to call this method from outside actor context. In that case the CompletableFuture will be executed in target actor thread context.
      *
      * This method returns a CompletableFuture, which is completed with a result once the actor's call completes. If an exception occurs during actor's call, the exception is then passed to the CompletableFuture and the actor's exception handler is not triggered. Both successful and failed completions occur in the caller's actor thread context.
      *
