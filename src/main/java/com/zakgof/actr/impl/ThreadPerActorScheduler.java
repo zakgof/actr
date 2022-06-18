@@ -14,23 +14,10 @@ import com.zakgof.actr.IActorScheduler;
 public class ThreadPerActorScheduler implements IActorScheduler {
 
     private final Map<Object, ExecutorService> executors = new ConcurrentHashMap<>();
-    private final ThreadFactory threadFactory;
-
-    public ThreadPerActorScheduler() {
-        this(Thread::new);
-    }
-
-    public ThreadPerActorScheduler(String name) {
-        this(runnable -> new Thread(runnable, "actr:" + name));
-    }
-
-    public ThreadPerActorScheduler(ThreadFactory threadFactory) {
-        this.threadFactory = threadFactory;
-    }
 
     @Override
     public void actorCreated(Object actorId) {
-        executors.put(actorId, Executors.newSingleThreadExecutor(threadFactory));
+        executors.put(actorId, Executors.newSingleThreadExecutor(runnable -> new Thread(runnable, "actr:" + actorId)));
     }
 
     @Override

@@ -69,25 +69,7 @@ public class Schedulers {
      * @return scheduler
      */
     public static IActorScheduler newThreadPerActorScheduler() {
-        return new ThreadPerActorScheduler("actr");
-    }
-
-    /**
-     * Creates a scheduler that creates a single-thread executor for each actor.
-     * @param threadFactory thread factory to be used for thread creation
-     * @return scheduler
-     */
-    public static IActorScheduler newThreadPerActorScheduler(ThreadFactory threadFactory) {
-        return new ThreadPerActorScheduler(threadFactory);
-    }
-
-    /**
-     * Creates a scheduler that creates a single-thread executor for each actor.
-     * @param name thread name
-     * @return scheduler
-     */
-    public static IActorScheduler newThreadPerActorScheduler(String name) {
-        return new ThreadPerActorScheduler(name);
+        return new ThreadPerActorScheduler();
     }
 
 }

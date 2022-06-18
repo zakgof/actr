@@ -1,5 +1,6 @@
 package com.zakgof.actr.impl;
 
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -26,7 +27,7 @@ class ActorImpl<T> implements IActorRef<T> {
     ActorImpl(T object, Supplier<T> constructor, IActorScheduler scheduler, ActorSystemImpl actorSystem, String name, BiConsumer<T, Exception> exceptionHandler, Consumer<T> destructor) {
         this.actorSystem = actorSystem;
         this.exceptionHandler = exceptionHandler;
-        this.name = name;
+        this.name = name == null ? getClass().getSimpleName().toLowerCase() + "_" + UUID.randomUUID() : name;
         this.destructor = destructor;
         if (object != null) {
             this.object = object;
@@ -122,9 +123,7 @@ class ActorImpl<T> implements IActorRef<T> {
 
     @Override
     public String toString() {
-        String objectClass = object == null ? "<disposed>" : object.getClass().getSimpleName();
-        String visibleName = name == null ? objectClass : name;
-        return "[" + actorSystem.name() + ":" + visibleName + "]";
+        return "[" + actorSystem.name() + ":" + name + "]";
     }
 
     @Override
