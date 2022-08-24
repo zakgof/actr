@@ -64,7 +64,7 @@ implementation 'com.github.zakgof:actr:0.4.2'
 <dependency>
   <groupId>com.github.zakgof</groupId>
   <artifactId>actr</artifactId>
-  <version>0.4.2/version>
+  <version>0.4.2</version>
 </dependency>
 ````
 
@@ -99,7 +99,7 @@ Call Printer from another actor
         // Tell: send text to print
         printerActor.tell(printer -> printer.print("Hello !"));
         
-        // Ask: retrieve printer name. Printer#getName runs in Printer's thread, #printerNameReply runs in Caller's thread
+        // Ask: retrieve printer name. Printer#getName runs in Printer's thread, #printerNameReceived runs in Caller's thread
         printerActor.ask(Printer::getName, this::printerNameReceived);
     }
     
